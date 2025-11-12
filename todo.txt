@@ -1,4 +1,4 @@
 1. Add migrations
-2. Register should return Token and not the User Object
+2. /register should return Token and not the User Object
 3. Add oauth
 
