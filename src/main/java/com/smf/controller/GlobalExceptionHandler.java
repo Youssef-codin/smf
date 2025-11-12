@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(AccessDeniedException.class)
 	public ResponseEntity<ApiResponse> handleAccessDenied(AccessDeniedException e) {
-		return responseHelper(HttpStatus.UNAUTHORIZED, "You are not authorized to access this resource.");
+		return responseHelper(HttpStatus.FORBIDDEN, e.getMessage());
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
