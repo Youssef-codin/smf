@@ -1,4 +1,4 @@
-package com.smf.api;
+package com.smf.dto.response.api;
 
 import java.time.Instant;
 
