@@ -21,12 +21,10 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
 	private final JwtUtils jwtUtils;
 	private final AppUserDetailsService service;
-	private final AuthEntryPointJwt entryPoint;
 
-	public AuthTokenFilter(JwtUtils jwtUtils, AppUserDetailsService service, AuthEntryPointJwt entryPoint) {
+	public AuthTokenFilter(JwtUtils jwtUtils, AppUserDetailsService service) {
 		this.jwtUtils = jwtUtils;
 		this.service = service;
-		this.entryPoint = entryPoint;
 	}
 
 	@Override
