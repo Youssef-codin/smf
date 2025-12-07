@@ -5,7 +5,7 @@ To view and test the API endpoints, open the following endpoint in your browser 
 ## Tools
 - **Java Version:** 21  
 - **Build Tool:** Maven  
-- **Database:** PostgreSQL  
+- **Database:** PostgreSQL 18
 	
 ---
 	
