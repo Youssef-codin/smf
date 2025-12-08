@@ -1,17 +1,21 @@
+-- V2__seed_data.sql
 
+-- Insert roles
+INSERT INTO roles (role_name) VALUES
+('ADMIN'),
+('USER')
+ON CONFLICT (role_name) DO NOTHING;
 
-INSERT INTO roles (role_name) VALUES ('ADMIN'), ('USER');
+-- Insert users
+INSERT INTO users (username, email, password) VALUES
+('admin', 'admin@smf.com', '$2a$10$YOUR_ADMIN_HASH'),
+('user',  'user@smf.com',  '$2a$10$YOUR_USER_HASH')
+ON CONFLICT (email) DO NOTHING;
 
-
-
-INSERT INTO users (id, username, email, password)
-VALUES
-  (UNHEX(REPLACE(UUID(),'-','')), 'admin', 'admin@smf.com', '<BCRYPT_HASH_FOR_admin>'),
-  (UNHEX(REPLACE(UUID(),'-','')), 'user',  'user@smf.com',  '<BCRYPT_HASH_FOR_user>');
-
-
+-- Assign roles to users
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id
-FROM users u, roles r
-WHERE (u.email = 'admin@smf.com' AND r.role_name = 'ADMIN')
-   OR (u.email = 'user@smf.com'  AND r.role_name = 'USER');
+FROM users u
+JOIN roles r ON (u.email = 'admin@smf.com' AND r.role_name = 'ADMIN')
+             OR (u.email = 'user@smf.com'  AND r.role_name = 'USER')
+ON CONFLICT (user_id, role_id) DO NOTHING;
