@@ -1,0 +1,68 @@
+package com.smf.service.auth;
+
+import com.smf.repo.UserRepository;
+import com.smf.repo.RoleRepository;
+import com.smf.dto.request.auth.*;
+import com.smf.dto.response.api.*;
+import com.smf.model.Role;
+import com.smf.model.User;
+import com.smf.exception.user.*;
+import java.util.UUID;
+import java.util.Set;
+import com.smf.security.JwtUtils;
+import com.smf.security.AppUserDetails;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AuthService implements IAuthService {
+
+    private final UserRepository userRepo;
+    private final RoleRepository roleRepo;
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final AuthenticationManager authManager;
+    private final JwtUtils jwtUtils;
+
+    public AuthService(UserRepository userRepo, RoleRepository roleRepo, BCryptPasswordEncoder passwordEncoder,
+            AuthenticationManager authManager, JwtUtils jwtUtils) {
+        this.userRepo = userRepo;
+        this.roleRepo = roleRepo;
+        this.passwordEncoder = passwordEncoder;
+        this.authManager = authManager;
+        this.jwtUtils = jwtUtils;
+    }
+
+    @Override
+    public JwtResponse login(LoginRequest req) {
+        Authentication auth = authManager.authenticate(new UsernamePasswordAuthenticationToken(
+                req.email(), req.password()));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        String jwt = jwtUtils.generateToken(auth);
+        AppUserDetails userDetails = (AppUserDetails) auth.getPrincipal();
+
+        return new JwtResponse(userDetails.getId(), jwt);
+    }
+
+    @Override
+    public User register(RegisterRequest req) {
+        boolean alreadyExist = userRepo.existsByEmail(req.email());
+        Role userRole = roleRepo.findByRoleName("USER")
+                .orElseThrow(() -> new RuntimeException("Default role not found"));
+
+        if (alreadyExist)
+            throw new UserAlreadyExistsException("Email Already Used");
+
+        User newUser = new User(UUID.randomUUID(),
+                req.email(),
+                req.username(),
+                passwordEncoder.encode(req.password()));
+        newUser.setRoles(Set.of(userRole));
+
+        return userRepo.save(newUser);
+    }
+}
