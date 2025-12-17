@@ -1,4 +1,4 @@
-# Secure Monitoring & Fortification (SMF)
+# Smooth Monitoring & Fortification (SMF)
 
 A Spring Boot application providing secure monitoring and fortification services with JWT authentication, PostgreSQL persistence, and containerised deployment.
 
