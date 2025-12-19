@@ -18,10 +18,10 @@ public class DeviceController {
     public ResponseEntity<ApiResponse<DeviceTestRequest>> testDevice(
             @RequestBody @Validated DeviceTestRequest request) {
 
-        // تسجيل البيانات في الـ log
+
         logger.info("Received test payload from device: {}", request);
 
-        // Response
+        
         ApiResponse<DeviceTestRequest> response = new ApiResponse<>(
                 true,
                 "Payload received successfully",
