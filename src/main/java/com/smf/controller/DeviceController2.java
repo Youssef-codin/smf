@@ -16,11 +16,12 @@ import com.smf.dto.device.DeviceTestRequest;
 @RequestMapping("/api/v1/device")
 public class DeviceController {
 
-	private static final Logger logger = LoggerFactory.getLogger(DeviceController.class);
+                private static final Logger logger = LoggerFactory.getLogger(DeviceController.class);
 
-	@PostMapping("/test")
-	public ResponseEntity<ApiResponse> testDevice(@RequestBody @Validated DeviceTestRequest request) {
-		logger.info("Received test payload from device: {}", request);
-		return ResponseEntity.ok(new ApiResponse(true, "Payload received successfully", request));
-	}
+                @PostMapping("/test")
+                public ResponseEntity<ApiResponse> testDevice(@RequestBody @Validated DeviceTestRequest request) {
+                                logger.info("Received test payload from device: {}", request);
+                                return ResponseEntity.ok(new ApiResponse(true, "Payload received successfully",
+                                                                request));
+                }
 }

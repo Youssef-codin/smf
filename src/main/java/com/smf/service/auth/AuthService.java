@@ -13,13 +13,14 @@ import org.springframework.stereotype.Service;
 import com.smf.dto.auth.JwtResponse;
 import com.smf.dto.auth.LoginRequest;
 import com.smf.dto.auth.RegisterRequest;
-import com.smf.exception.user.UserAlreadyExistsException;
+import com.smf.util.AppError;
 import com.smf.model.Role;
 import com.smf.model.User;
 import com.smf.repo.RoleRepository;
 import com.smf.repo.UserRepository;
 import com.smf.security.AppUserDetails;
 import com.smf.security.JwtUtils;
+import org.springframework.http.HttpStatus;
 
 @Service
 public class AuthService implements IAuthService {
@@ -54,10 +55,10 @@ public class AuthService implements IAuthService {
     public User register(RegisterRequest req) {
         boolean alreadyExist = userRepo.existsByEmail(req.email());
         Role userRole = roleRepo.findByRoleName("USER")
-                .orElseThrow(() -> new RuntimeException("Default role not found"));
+                .orElseThrow(() -> new AppError(HttpStatus.INTERNAL_SERVER_ERROR, "Default role not found"));
 
         if (alreadyExist)
-            throw new UserAlreadyExistsException("Email Already Used");
+            throw new AppError(HttpStatus.CONFLICT, "Email Already Used");
 
         User newUser = new User(UUID.randomUUID(),
                 req.email(),
