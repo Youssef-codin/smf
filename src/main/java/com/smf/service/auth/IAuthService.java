@@ -1,8 +1,9 @@
 package com.smf.service.auth;
 
+import com.smf.dto.auth.JwtResponse;
+import com.smf.dto.auth.LoginRequest;
+import com.smf.dto.auth.RegisterRequest;
 import com.smf.model.User;
-import com.smf.dto.response.api.*;
-import com.smf.dto.request.auth.*;
 
 public interface IAuthService {
     JwtResponse login(LoginRequest req);

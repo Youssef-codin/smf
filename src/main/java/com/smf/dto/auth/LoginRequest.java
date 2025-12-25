@@ -1,4 +1,4 @@
-package com.smf.dto.request.auth;
+package com.smf.dto.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

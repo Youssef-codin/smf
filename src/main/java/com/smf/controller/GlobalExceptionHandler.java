@@ -10,8 +10,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.smf.dto.response.api.ApiResponse;
 import com.smf.exception.user.UserAlreadyExistsException;
+import com.smf.dto.api.ApiResponse;
 import com.smf.exception.user.UserNotFoundException;
 
 import io.jsonwebtoken.JwtException;

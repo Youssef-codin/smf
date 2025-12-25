@@ -1,16 +1,7 @@
 package com.smf.service.auth;
 
-import com.smf.repo.UserRepository;
-import com.smf.repo.RoleRepository;
-import com.smf.dto.request.auth.*;
-import com.smf.dto.response.api.*;
-import com.smf.model.Role;
-import com.smf.model.User;
-import com.smf.exception.user.*;
-import java.util.UUID;
 import java.util.Set;
-import com.smf.security.JwtUtils;
-import com.smf.security.AppUserDetails;
+import java.util.UUID;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,6 +9,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.smf.dto.auth.JwtResponse;
+import com.smf.dto.auth.LoginRequest;
+import com.smf.dto.auth.RegisterRequest;
+import com.smf.exception.user.UserAlreadyExistsException;
+import com.smf.model.Role;
+import com.smf.model.User;
+import com.smf.repo.RoleRepository;
+import com.smf.repo.UserRepository;
+import com.smf.security.AppUserDetails;
+import com.smf.security.JwtUtils;
 
 @Service
 public class AuthService implements IAuthService {

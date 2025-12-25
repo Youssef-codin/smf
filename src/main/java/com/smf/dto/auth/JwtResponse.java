@@ -1,4 +1,4 @@
-package com.smf.dto.response.api;
+package com.smf.dto.auth;
 
 import java.util.UUID;
 

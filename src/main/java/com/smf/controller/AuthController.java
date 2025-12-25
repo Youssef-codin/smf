@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.smf.dto.request.auth.LoginRequest;
-import com.smf.dto.request.auth.RegisterRequest;
-import com.smf.dto.response.api.ApiResponse;
-import com.smf.dto.response.api.JwtResponse;
+import com.smf.dto.api.ApiResponse;
+import com.smf.dto.auth.JwtResponse;
+import com.smf.dto.auth.LoginRequest;
+import com.smf.dto.auth.RegisterRequest;
 import com.smf.model.User;
 import com.smf.service.auth.IAuthService;
 
