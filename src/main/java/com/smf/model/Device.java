@@ -6,6 +6,7 @@ import java.util.UUID;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
@@ -14,7 +15,8 @@ import jakarta.persistence.Table;
 public class Device {
 	@Id
 	private UUID id;
-	private String device_id;
+	@Column(name = "device_id")
+	private String deviceId;
 	@ManyToOne
 	@JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
 	private User owner;
@@ -29,14 +31,6 @@ public class Device {
 
 	public void setId(UUID id) {
 		this.id = id;
-	}
-
-	public String getDevice_id() {
-		return device_id;
-	}
-
-	public void setDevice_id(String device_id) {
-		this.device_id = device_id;
 	}
 
 	public User getOwner() {
@@ -77,5 +71,13 @@ public class Device {
 
 	public void setLast_seen_timestamp(Timestamp last_seen_timestamp) {
 		this.last_seen_timestamp = last_seen_timestamp;
+	}
+
+	public String getDeviceId() {
+		return deviceId;
+	}
+
+	public void setDeviceId(String deviceId) {
+		this.deviceId = deviceId;
 	}
 }

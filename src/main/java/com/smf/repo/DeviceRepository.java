@@ -8,6 +8,5 @@ import java.util.UUID;
 
 public interface DeviceRepository extends JpaRepository<Device, UUID> {
 
-    // MUST match the Java field name in Device entity
-    Optional<Device> findByDevice_id(String device_id);
+	Optional<Device> findByDeviceId(String deviceId);
 }
