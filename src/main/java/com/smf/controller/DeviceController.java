@@ -1,31 +1,32 @@
 package com.smf.controller;
 
-import com.smf.dto.device.DeviceRegisterRequest;
+import com.smf.dto.request.device.DeviceTestRequest;
 import com.smf.dto.response.api.ApiResponse;
-import com.smf.model.Device;
-import com.smf.service.device.IDeviceService;
-import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/device")
 public class DeviceController {
 
-    private final IDeviceService deviceService;
+    private static final Logger logger =
+            LoggerFactory.getLogger(DeviceController.class);
 
-    public DeviceController(IDeviceService deviceService) {
-        this.deviceService = deviceService;
-    }
+    @PostMapping("/test")
+    public ResponseEntity<ApiResponse> testDevice(
+            @RequestBody @Validated DeviceTestRequest request) {
 
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponse> registerDevice(
-            @Valid @RequestBody DeviceRegisterRequest request) {
-
-        Device device = deviceService.registerDevice(request);
+        logger.info("Received test payload from device: {}", request);
 
         return ResponseEntity.ok(
-                new ApiResponse(true, "Device registered successfully", device)
+                new ApiResponse(
+                        true,
+                        "Payload received successfully",
+                        request
+                )
         );
     }
 }
