@@ -64,6 +64,8 @@ Requires PostgreSQL installed locally.
    ```bash
    mvn spring-boot:run
    ```
+   **Note:** The application runs on port **8000** locally.
+   - Access: [http://localhost:8000](http://localhost:8000)
 
 #### Option 2: Hybrid (Dockerized Database + Local Server)
 
@@ -85,6 +87,8 @@ Best for local development and debugging with minimal setup.
    ```bash
    mvn spring-boot:run
    ```
+   **Note:** The application runs on port **8000** locally.
+   - Access: [http://localhost:8000](http://localhost:8000)
 
    View database logs with:
    ```bash
@@ -96,12 +100,12 @@ Best for local development and debugging with minimal setup.
 Core application logic is organised under `src/main/java/com/smf`:
 
 - **`controller`** – REST endpoints handling HTTP requests
-- **`dto`** – Data Transfer Objects for request/response payloads
-- **`exception`** – Custom exceptions and global error handling
+- **`dto`** – Data Transfer Objects organized by module (api, auth, device)
 - **`model`** – JPA entities mapped to database tables
 - **`repo`** – Spring Data JPA repository interfaces
 - **`security`** – JWT utilities, authentication, and authorization
 - **`service`** – Business logic and service layer orchestration
+- **`util`** – Utility classes including `AppError` for global exception handling
 
 ## Database Migrations
 
@@ -109,7 +113,8 @@ Database schema migrations are managed with [Flyway](https://flywaydb.org/). Mig
 
 ## API Documentation
 The API specification is available in OpenAPI 3.0 format:
-- **OpenAPI JSON:** [http://localhost:8080/api-docs](http://localhost:8080/api-docs)
+- **Docker:** [http://localhost:8080/api-docs](http://localhost:8080/api-docs)
+- **Local:** [http://localhost:8000/api-docs](http://localhost:8000/api-docs)
 
 You can view the raw JSON schema directly in your browser or import it into tools like Postman, Insomnia, or any OpenAPI-compatible client for interactive API exploration and testing.
 
@@ -117,7 +122,7 @@ You can view the raw JSON schema directly in your browser or import it into tool
 
 1. **API Responses** – All responses must use the `ApiResponse` class
 2. **API Prefix** – All controllers must be mapped under `/api/v1`
-3. **Exception Handling** – All exceptions must be handled by `GlobalExceptionHandler`
+3. **Exception Handling** – All exceptions must be handled by `GlobalExceptionHandler` using `AppError`
 4. **Branching** – Always work on a new feature branch, never commit directly to `main`
 5. **Commit Messages** – Keep them clear and descriptive
    - Example: `feature: add device registration`
