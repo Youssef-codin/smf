@@ -1,7 +1,8 @@
-package com.smf.dto.request.auth;
+package com.smf.dto.device;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.sql.Timestamp;
 
 public class DeviceRegisterRequest {
 
@@ -12,7 +13,7 @@ public class DeviceRegisterRequest {
     private String deviceName;
 
     @NotBlank
-    private String ownerId; 
+    private String ownerId;
 
     @NotNull
     private Double lastLocationLat;
@@ -20,8 +21,8 @@ public class DeviceRegisterRequest {
     @NotNull
     private Double lastLocationLon;
 
-    @NotBlank
-    private String serialNumber;
+    @NotNull
+    private Timestamp lastSeenTimestamp;
 
     public String getDeviceId() { return deviceId; }
     public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
@@ -33,11 +34,17 @@ public class DeviceRegisterRequest {
     public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
 
     public Double getLastLocationLat() { return lastLocationLat; }
-    public void setLastLocationLat(Double lastLocationLat) { this.lastLocationLat = lastLocationLat; }
+    public void setLastLocationLat(Double lastLocationLat) {
+        this.lastLocationLat = lastLocationLat;
+    }
 
     public Double getLastLocationLon() { return lastLocationLon; }
-    public void setLastLocationLon(Double lastLocationLon) { this.lastLocationLon = lastLocationLon; }
+    public void setLastLocationLon(Double lastLocationLon) {
+        this.lastLocationLon = lastLocationLon;
+    }
 
-    public String getSerialNumber() { return serialNumber; }
-    public void setSerialNumber(String serialNumber) { this.serialNumber = serialNumber; }
+    public Timestamp getLastSeenTimestamp() { return lastSeenTimestamp; }
+    public void setLastSeenTimestamp(Timestamp lastSeenTimestamp) {
+        this.lastSeenTimestamp = lastSeenTimestamp;
+    }
 }

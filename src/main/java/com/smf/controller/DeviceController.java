@@ -1,8 +1,9 @@
 package com.smf.controller;
 
-import com.smf.dto.request.auth.DeviceRegisterRequest;
-import com.smf.dto.response.DeviceRegisterResponse;
-import com.smf.service.IDeviceService;
+import com.smf.dto.device.DeviceRegisterRequest;
+import com.smf.dto.response.api.ApiResponse;
+import com.smf.model.Device;
+import com.smf.service.device.IDeviceService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,15 +19,13 @@ public class DeviceController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<DeviceRegisterResponse> registerDevice(
+    public ResponseEntity<ApiResponse> registerDevice(
             @Valid @RequestBody DeviceRegisterRequest request) {
 
-        DeviceRegisterResponse response = deviceService.registerDevice(request);
+        Device device = deviceService.registerDevice(request);
 
-        if (response.isSuccess()) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.badRequest().body(response);
-        }
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Device registered successfully", device)
+        );
     }
 }
