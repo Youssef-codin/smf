@@ -1,7 +1,6 @@
 package com.smf.service.device;
 
 import com.smf.dto.device.DeviceResponse;
-import com.smf.security.AppUserDetails;
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.util.AppError;
 import com.smf.model.Device;
@@ -9,8 +8,6 @@ import com.smf.model.User;
 import com.smf.repo.DeviceRepository;
 import com.smf.repo.UserRepository;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,14 +39,7 @@ public class DeviceService implements IDeviceService {
             throw new AppError(HttpStatus.BAD_REQUEST, "last_seen_timestamp cannot be in the future");
         }
 
-        UUID authenticatedUserId = getAuthenticatedUserId();
-        UUID ownerId = UUID.fromString(request.getOwnerId());
-
-        if (!authenticatedUserId.equals(ownerId)) {
-            throw new AppError(HttpStatus.BAD_REQUEST, "You cannot register a device for another user");
-        }
-
-        User owner = userRepository.findById(ownerId)
+        User owner = userRepository.findById(UUID.fromString(request.getOwnerId()))
                 .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Owner not found"));
 
         Device device = new Device(
@@ -68,11 +58,5 @@ public class DeviceService implements IDeviceService {
                 device.getLast_location_lat(),
                 device.getLast_location_lon(),
                 device.getLast_seen_timestamp());
-    }
-
-    private UUID getAuthenticatedUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        AppUserDetails userDetails = (AppUserDetails) authentication.getPrincipal();
-        return userDetails.getId();
     }
 }
