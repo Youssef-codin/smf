@@ -3,27 +3,44 @@ package com.smf.model;
 import java.sql.Timestamp;
 import java.util.UUID;
 
+import org.hibernate.annotations.NaturalId;
+
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "devices")
 public class Device {
 	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
-	@Column(name = "device_id")
-	private String deviceId;
+	@Column(name = "mac_address")
+	@NaturalId
+	private String macAddress;
 	@ManyToOne
 	@JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
 	private User owner;
-	private String device_name;
 	private Double last_location_lat;
 	private Double last_location_lon;
 	private Timestamp last_seen_timestamp;
+
+	public Device() {
+	}
+
+	public Device(String macAddress, User owner, Double last_location_lat, Double last_location_lon,
+			Timestamp last_seen_timestamp) {
+		this.macAddress = macAddress;
+		this.owner = owner;
+		this.last_location_lat = last_location_lat;
+		this.last_location_lon = last_location_lon;
+		this.last_seen_timestamp = last_seen_timestamp;
+	}
 
 	public UUID getId() {
 		return id;
@@ -39,14 +56,6 @@ public class Device {
 
 	public void setOwner(User owner) {
 		this.owner = owner;
-	}
-
-	public String getDevice_name() {
-		return device_name;
-	}
-
-	public void setDevice_name(String name) {
-		this.device_name = name;
 	}
 
 	public Double getLast_location_lat() {
@@ -73,11 +82,11 @@ public class Device {
 		this.last_seen_timestamp = last_seen_timestamp;
 	}
 
-	public String getDeviceId() {
-		return deviceId;
+	public String getMacAddress() {
+		return macAddress;
 	}
 
-	public void setDeviceId(String deviceId) {
-		this.deviceId = deviceId;
+	public void setMacAddress(String deviceId) {
+		this.macAddress = deviceId;
 	}
 }

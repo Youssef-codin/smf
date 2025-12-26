@@ -3,6 +3,7 @@ package com.smf.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,10 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.smf.dto.api.ApiResponse;
-import com.smf.dto.device.DeviceTestRequest;
-import com.smf.model.Device;
 import com.smf.dto.device.DeviceRegisterRequest;
-import com.smf.service.device.*;
+import com.smf.dto.device.DeviceResponse;
+import com.smf.dto.device.DeviceTestRequest;
+import com.smf.service.device.IDeviceService;
 
 import jakarta.validation.Valid;
 
@@ -35,10 +36,10 @@ public class DeviceController {
 		return ResponseEntity.ok(new ApiResponse(true, "Payload received successfully", request));
 	}
 
+	@PreAuthorize("hasAuthority('ADMIN')")
 	@PostMapping("/register")
 	public ResponseEntity<ApiResponse> registerDevice(@Valid @RequestBody DeviceRegisterRequest request) {
-
-		Device device = deviceService.registerDevice(request);
-		return ResponseEntity.ok(new ApiResponse(true, "Device registered successfully", device));
+		DeviceResponse response = deviceService.registerDevice(request);
+		return ResponseEntity.ok(new ApiResponse(true, "Device registered successfully", response));
 	}
 }

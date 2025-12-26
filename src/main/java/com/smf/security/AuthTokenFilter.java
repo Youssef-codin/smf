@@ -35,8 +35,11 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 			String jwt = parseJwt(request);
 
 			if (StringUtils.hasText(jwt) && jwtUtils.validateJwtToken(jwt)) {
-				String email = jwtUtils.getUsernameFromToken(jwt);
-				UserDetails userDetails = service.loadUserByUsername(email);
+				// The subject in the JWT is the User ID (UUID), not the email
+				String userId = jwtUtils.getUsernameFromToken(jwt);
+				
+				UserDetails userDetails = service.loadUserById(userId);
+				
 				var auth = new UsernamePasswordAuthenticationToken(userDetails,
 						null,
 						userDetails.getAuthorities());

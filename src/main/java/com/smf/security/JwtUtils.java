@@ -40,8 +40,8 @@ public class JwtUtils {
 				.map(GrantedAuthority::getAuthority).toList();
 
 		return Jwts.builder()
-				.subject(userPrincipal.getUsername())
-				.claim("id", userPrincipal.getId())
+				.subject(userPrincipal.getId().toString())
+				.claim("email", userPrincipal.getUsername())
 				.claim("roles", roles)
 				.issuedAt(new Date())
 				.expiration(new Date((new Date()).getTime() + jwtExpirationMs))

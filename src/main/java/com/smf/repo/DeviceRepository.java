@@ -8,5 +8,5 @@ import java.util.UUID;
 
 public interface DeviceRepository extends JpaRepository<Device, UUID> {
 
-	Optional<Device> findByDeviceId(String deviceId);
+	Optional<Device> findByMacAddress(String macAddress);
 }

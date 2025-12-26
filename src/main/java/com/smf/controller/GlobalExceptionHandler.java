@@ -4,11 +4,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.smf.dto.api.ApiResponse;
 import com.smf.util.AppError;
+
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.security.SignatureException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -18,6 +23,26 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(AppError.class)
 	public ResponseEntity<ApiResponse> handleAppError(AppError e) {
 		return ResponseEntity.status(e.getStatus()).body(new ApiResponse(false, e.getMessage(), null));
+	}
+
+	@ExceptionHandler(JwtException.class)
+	public ResponseEntity<ApiResponse> handleJwtException(JwtException e) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, e.getMessage(), null));
+	}
+
+	@ExceptionHandler(SignatureException.class)
+	public ResponseEntity<ApiResponse> handleSignatureException(SignatureException e) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, e.getMessage(), null));
+	}
+
+	@ExceptionHandler(AuthenticationException.class)
+	public ResponseEntity<ApiResponse> handleAuthenticationException(AuthenticationException e) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, e.getMessage(), null));
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ApiResponse> handleAccessDenied(AccessDeniedException e) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse(false, e.getMessage(), null));
 	}
 
 	@ExceptionHandler(Exception.class)

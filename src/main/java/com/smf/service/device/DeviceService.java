@@ -1,5 +1,7 @@
 package com.smf.service.device;
 
+import com.smf.dto.device.DeviceResponse;
+import com.smf.security.AppUserDetails;
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.util.AppError;
 import com.smf.model.Device;
@@ -29,9 +31,9 @@ public class DeviceService implements IDeviceService {
 
     @Override
     @Transactional
-    public Device registerDevice(DeviceRegisterRequest request) {
+    public DeviceResponse registerDevice(DeviceRegisterRequest request) {
 
-        if (deviceRepository.findByDevice_id(request.getDeviceId()).isPresent()) {
+        if (deviceRepository.findByMacAddress(request.getMacAddress()).isPresent()) {
             throw new AppError(HttpStatus.CONFLICT, "Device already registered");
         }
 
@@ -50,19 +52,27 @@ public class DeviceService implements IDeviceService {
         User owner = userRepository.findById(ownerId)
                 .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Owner not found"));
 
-        Device device = new Device();
-        device.setDevice_id(request.getDeviceId());
-        device.setDevice_name(request.getDeviceName());
-        device.setOwner(owner);
-        device.setLast_location_lat(request.getLastLocationLat());
-        device.setLast_location_lon(request.getLastLocationLon());
-        device.setLast_seen_timestamp(request.getLastSeenTimestamp());
+        Device device = new Device(
+                request.getMacAddress(),
+                owner,
+                request.getLastLocationLat(),
+                request.getLastLocationLon(),
+                request.getLastSeenTimestamp());
 
-        return deviceRepository.save(device);
+        device = deviceRepository.save(device);
+
+        return new DeviceResponse(
+                device.getId(),
+                device.getMacAddress(),
+                device.getOwner().getId(),
+                device.getLast_location_lat(),
+                device.getLast_location_lon(),
+                device.getLast_seen_timestamp());
     }
 
     private UUID getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return UUID.fromString(authentication.getName());
+        AppUserDetails userDetails = (AppUserDetails) authentication.getPrincipal();
+        return userDetails.getId();
     }
 }

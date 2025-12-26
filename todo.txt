@@ -1,5 +1,0 @@
-1. Add migrations -fares
-2. /register should return Token and not the User Object for automatic login and not to send back password hash -fatma
-3. Add oauth? 
-4. add tests?
-5. How to determine which User owns which device? 

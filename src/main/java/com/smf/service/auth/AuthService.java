@@ -1,7 +1,6 @@
 package com.smf.service.auth;
 
 import java.util.Set;
-import java.util.UUID;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -60,10 +59,7 @@ public class AuthService implements IAuthService {
         if (alreadyExist)
             throw new AppError(HttpStatus.CONFLICT, "Email Already Used");
 
-        User newUser = new User(UUID.randomUUID(),
-                req.email(),
-                req.username(),
-                passwordEncoder.encode(req.password()));
+        User newUser = new User(req.email(), req.username(), passwordEncoder.encode(req.password()));
         newUser.setRoles(Set.of(userRole));
 
         return userRepo.save(newUser);
