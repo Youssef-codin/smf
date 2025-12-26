@@ -109,7 +109,9 @@ Core application logic is organised under `src/main/java/com/smf`:
 
 ## Database Migrations
 
-Database schema migrations are managed with [Flyway](https://flywaydb.org/). Migration scripts located in `src/main/resources/db/migration/` are automatically applied on application startup.
+Database schema migrations are managed with [Flyway](https://flywaydb.org/). Migration scripts are located in `src/main/resources/db/migration/`.
+
+**Note:** Flyway is configured, however, we are not using it in development. The application is currently set to use Hibernate's `create-drop` feature for schema management during development.
 
 ## API Documentation
 The API specification is available in OpenAPI 3.0 format:
