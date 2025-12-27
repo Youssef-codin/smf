@@ -1,10 +1,14 @@
 package com.smf.controller;
 
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,5 +45,12 @@ public class DeviceController {
 	public ResponseEntity<ApiResponse> registerDevice(@Valid @RequestBody DeviceRegisterRequest request) {
 		DeviceResponse response = deviceService.registerDevice(request);
 		return ResponseEntity.ok(new ApiResponse(true, "Device registered successfully", response));
+	}
+
+	@PreAuthorize("hasAuthority('ADMIN')")
+	@GetMapping("/{deviceId}")
+	public ResponseEntity<ApiResponse> getDevice(@PathVariable UUID deviceId) {
+		DeviceResponse response = deviceService.getDeviceById(deviceId);
+		return ResponseEntity.ok(new ApiResponse(true, "Device fetched successfully", response));
 	}
 }

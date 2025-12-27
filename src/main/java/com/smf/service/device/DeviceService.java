@@ -59,4 +59,18 @@ public class DeviceService implements IDeviceService {
                 device.getLast_location_lon(),
                 device.getLast_seen_timestamp());
     }
+
+    @Override
+    public DeviceResponse getDeviceById(UUID deviceId) {
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
+
+        return new DeviceResponse(
+                device.getId(),
+                device.getMacAddress(),
+                device.getOwner().getId(),
+                device.getLast_location_lat(),
+                device.getLast_location_lon(),
+                device.getLast_seen_timestamp());
+    }
 }
