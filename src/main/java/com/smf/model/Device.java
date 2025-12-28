@@ -5,11 +5,15 @@ import java.util.UUID;
 
 import org.hibernate.annotations.NaturalId;
 
+import com.smf.model.enums.DeviceStatus;
+
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
@@ -26,20 +30,27 @@ public class Device {
 	@ManyToOne
 	@JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
 	private User owner;
-	private Double last_location_lat;
-	private Double last_location_lon;
-	private Timestamp last_seen_timestamp;
+	@Column(name = "last_location_lat")
+	private Double lastLocationLat;
+	@Column(name = "last_location_lon")
+	private Double lastLocationLon;
+	@Column(name = "last_seen_timestamp")
+	private Timestamp lastSeenTimestamp;
+
+	@Enumerated(EnumType.STRING)
+	private DeviceStatus status;
 
 	public Device() {
 	}
 
-	public Device(String macAddress, User owner, Double last_location_lat, Double last_location_lon,
-			Timestamp last_seen_timestamp) {
+	public Device(String macAddress, User owner, Double lastLocationLat, Double lastLocationLon,
+			Timestamp lastSeenTimestamp) {
 		this.macAddress = macAddress;
 		this.owner = owner;
-		this.last_location_lat = last_location_lat;
-		this.last_location_lon = last_location_lon;
-		this.last_seen_timestamp = last_seen_timestamp;
+		this.lastLocationLat = lastLocationLat;
+		this.lastLocationLon = lastLocationLon;
+		this.lastSeenTimestamp = lastSeenTimestamp;
+		this.status = DeviceStatus.OFFLINE;
 	}
 
 	public UUID getId() {
@@ -58,28 +69,28 @@ public class Device {
 		this.owner = owner;
 	}
 
-	public Double getLast_location_lat() {
-		return last_location_lat;
+	public Double getLastLocationLat() {
+		return lastLocationLat;
 	}
 
-	public void setLast_location_lat(Double last_location_lat) {
-		this.last_location_lat = last_location_lat;
+	public void setLastLocationLat(Double lastLocationLat) {
+		this.lastLocationLat = lastLocationLat;
 	}
 
-	public Double getLast_location_lon() {
-		return last_location_lon;
+	public Double getLastLocationLon() {
+		return lastLocationLon;
 	}
 
-	public void setLast_location_lon(Double last_location_lon) {
-		this.last_location_lon = last_location_lon;
+	public void setLastLocationLon(Double lastLocationLon) {
+		this.lastLocationLon = lastLocationLon;
 	}
 
-	public Timestamp getLast_seen_timestamp() {
-		return last_seen_timestamp;
+	public Timestamp getLastSeenTimestamp() {
+		return lastSeenTimestamp;
 	}
 
-	public void setLast_seen_timestamp(Timestamp last_seen_timestamp) {
-		this.last_seen_timestamp = last_seen_timestamp;
+	public void setLastSeenTimestamp(Timestamp lastSeenTimestamp) {
+		this.lastSeenTimestamp = lastSeenTimestamp;
 	}
 
 	public String getMacAddress() {
@@ -88,5 +99,13 @@ public class Device {
 
 	public void setMacAddress(String deviceId) {
 		this.macAddress = deviceId;
+	}
+
+	public DeviceStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(DeviceStatus status) {
+		this.status = status;
 	}
 }

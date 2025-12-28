@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 public class DeviceTestRequest {
 
     @NotBlank
-    private String device_id;
+    private String macAddress;
 
     @NotNull
     private Double lat;
@@ -14,15 +14,12 @@ public class DeviceTestRequest {
     @NotNull
     private Double lon;
 
-    private String status;
-
-    // Getters & Setters
-    public String getDevice_id() {
-        return device_id;
+    public String getMacAddress() {
+        return macAddress;
     }
 
-    public void setDevice_id(String device_id) {
-        this.device_id = device_id;
+    public void setMacAddress(String mac_address) {
+        this.macAddress = mac_address;
     }
 
     public Double getLat() {
@@ -39,13 +36,5 @@ public class DeviceTestRequest {
 
     public void setLon(Double lon) {
         this.lon = lon;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 }

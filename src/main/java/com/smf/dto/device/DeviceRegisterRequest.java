@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.sql.Timestamp;
 
+import com.smf.model.enums.DeviceStatus;
+
 public class DeviceRegisterRequest {
 
     @NotBlank
@@ -20,6 +22,17 @@ public class DeviceRegisterRequest {
 
     @NotNull
     private Timestamp lastSeenTimestamp;
+
+    @NotNull
+    private DeviceStatus status;
+
+    public DeviceStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(DeviceStatus status) {
+        this.status = status;
+    }
 
     public String getMacAddress() {
         return macAddress;
