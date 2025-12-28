@@ -23,7 +23,7 @@ import com.smf.service.device.IDeviceService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("${api.prefix}/device")
+@RequestMapping("${api.prefix}/devices")
 public class DeviceController {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeviceController.class);
@@ -41,7 +41,7 @@ public class DeviceController {
 	}
 
 	@PreAuthorize("hasAuthority('ADMIN')")
-	@PostMapping("/register")
+	@PostMapping("/")
 	public ResponseEntity<ApiResponse> registerDevice(@Valid @RequestBody DeviceRegisterRequest request) {
 		DeviceResponse response = deviceService.registerDevice(request);
 		return ResponseEntity.ok(new ApiResponse(true, "Device registered successfully", response));
