@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.smf.dto.api.ApiResponse;
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.dto.device.DeviceResponse;
+import com.smf.dto.device.DeviceSosRequest;
 import com.smf.dto.device.DeviceTestRequest;
+import com.smf.model.Device;
 import com.smf.service.device.IDeviceService;
 
 import jakarta.validation.Valid;
@@ -53,4 +55,6 @@ public class DeviceController {
 		DeviceResponse response = deviceService.getDeviceById(deviceId);
 		return ResponseEntity.ok(new ApiResponse(true, "Device fetched successfully", response));
 	}
+
+
 }

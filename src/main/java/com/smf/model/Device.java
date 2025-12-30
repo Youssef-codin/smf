@@ -18,6 +18,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
 
+
+
 @Entity
 @Table(name = "devices")
 public class Device {
@@ -43,6 +45,8 @@ public class Device {
 	public Device() {
 	}
 
+	
+
 	public Device(String macAddress, User owner, Double lastLocationLat, Double lastLocationLon,
 			Timestamp lastSeenTimestamp) {
 		this.macAddress = macAddress;
@@ -52,6 +56,7 @@ public class Device {
 		this.lastSeenTimestamp = lastSeenTimestamp;
 		this.status = DeviceStatus.OFFLINE;
 	}
+
 
 	public UUID getId() {
 		return id;
@@ -108,4 +113,5 @@ public class Device {
 	public void setStatus(DeviceStatus status) {
 		this.status = status;
 	}
+
 }
