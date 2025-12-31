@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class DeviceService implements IDeviceService {
@@ -64,6 +66,44 @@ public class DeviceService implements IDeviceService {
         return mapToDeviceResponse(device);
     }
 
+    @Override
+    public List<DeviceResponse> getAllDevices() {
+        return deviceRepository.findAll()
+                .stream()
+                .map(this::mapToDeviceResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public DeviceResponse updateDevice(UUID deviceId, DeviceRegisterRequest request) {
+
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
+
+        User owner = userRepository.findById(UUID.fromString(request.getOwnerId()))
+                .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Owner not found"));
+
+        device.setOwner(owner);
+        device.setLastLocationLat(request.getLastLocationLat());
+        device.setLastLocationLon(request.getLastLocationLon());
+        device.setLastSeenTimestamp(request.getLastSeenTimestamp());
+        device.setStatus(request.getStatus());
+
+        device = deviceRepository.save(device);
+
+        return mapToDeviceResponse(device);
+    }
+
+    @Override
+    @Transactional
+    public void deleteDevice(UUID deviceId) {
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
+
+        deviceRepository.delete(device);
+    }
+
     @Transactional
     public DeviceResponse handleSos(String macAddress) {
         Device device = deviceRepository.findByMacAddress(macAddress)
@@ -86,5 +126,4 @@ public class DeviceService implements IDeviceService {
                 device.getStatus()
         );
     }
-
 }
