@@ -28,6 +28,8 @@ import jakarta.validation.Valid;
 @RequestMapping("${api.prefix}/devices")
 public class DeviceController {
 
+        
+
 	private static final Logger logger = LoggerFactory.getLogger(DeviceController.class);
 
 	private final IDeviceService deviceService;
@@ -47,13 +49,6 @@ public class DeviceController {
 	public ResponseEntity<ApiResponse> registerDevice(@Valid @RequestBody DeviceRegisterRequest request) {
 		DeviceResponse response = deviceService.registerDevice(request);
 		return ResponseEntity.ok(new ApiResponse(true, "Device registered successfully", response));
-	}
-
-	@PreAuthorize("hasAuthority('ADMIN')")
-	@GetMapping("/{deviceId}")
-	public ResponseEntity<ApiResponse> getDevice(@PathVariable UUID deviceId) {
-		DeviceResponse response = deviceService.getDeviceById(deviceId);
-		return ResponseEntity.ok(new ApiResponse(true, "Device fetched successfully", response));
 	}
 
 

@@ -1,7 +1,6 @@
 package com.smf.service.device;
 
 import com.smf.dto.device.DeviceResponse;
-import com.smf.dto.device.DeviceSosRequest;
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.util.AppError;
 import com.smf.model.Device;
@@ -10,10 +9,8 @@ import com.smf.model.enums.DeviceStatus;
 import com.smf.repo.DeviceRepository;
 import com.smf.repo.UserRepository;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.sql.Timestamp;
 import java.util.UUID;
@@ -72,7 +69,7 @@ public class DeviceService implements IDeviceService {
         Device device = deviceRepository.findByMacAddress(macAddress)
                 .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
 
-        device.setStatus(DeviceStatus.valueOf("SOS"));
+        device.setStatus(DeviceStatus.SOS);
         device = deviceRepository.save(device);
 
         return mapToDeviceResponse(device);
