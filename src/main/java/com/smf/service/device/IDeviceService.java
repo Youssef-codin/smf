@@ -12,5 +12,6 @@ public interface IDeviceService {
     DeviceResponse updateDevice(UUID deviceId, DeviceRegisterRequest request);
     void deleteDevice(UUID deviceId);
     DeviceResponse handleSos(String macAddress);
+    void test(DeviceTestRequest request);
 }
 

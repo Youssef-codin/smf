@@ -1,5 +1,9 @@
 package com.smf.controller;
 
+import com.smf.dto.api.ApiResponse;
+import com.smf.util.AppError;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.security.SignatureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -9,53 +13,58 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import com.smf.dto.api.ApiResponse;
-import com.smf.util.AppError;
-
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.security.SignatureException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-	@ExceptionHandler(AppError.class)
-	public ResponseEntity<ApiResponse> handleAppError(AppError e) {
-		return ResponseEntity.status(e.getStatus()).body(new ApiResponse(false, e.getMessage(), null));
-	}
+  @ExceptionHandler(AppError.class)
+  public ResponseEntity<ApiResponse> handleAppError(AppError e) {
+    return ResponseEntity.status(e.getStatus()).body(new ApiResponse(false, e.getMessage(), null));
+  }
 
-	@ExceptionHandler(JwtException.class)
-	public ResponseEntity<ApiResponse> handleJwtException(JwtException e) {
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, e.getMessage(), null));
-	}
+  @ExceptionHandler(JwtException.class)
+  public ResponseEntity<ApiResponse> handleJwtException(JwtException e) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .body(new ApiResponse(false, e.getMessage(), null));
+  }
 
-	@ExceptionHandler(SignatureException.class)
-	public ResponseEntity<ApiResponse> handleSignatureException(SignatureException e) {
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, e.getMessage(), null));
-	}
+  @ExceptionHandler(SignatureException.class)
+  public ResponseEntity<ApiResponse> handleSignatureException(SignatureException e) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .body(new ApiResponse(false, e.getMessage(), null));
+  }
 
-	@ExceptionHandler(AuthenticationException.class)
-	public ResponseEntity<ApiResponse> handleAuthenticationException(AuthenticationException e) {
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, e.getMessage(), null));
-	}
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<ApiResponse> handleAuthenticationException(AuthenticationException e) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .body(new ApiResponse(false, e.getMessage(), null));
+  }
 
-	@ExceptionHandler(AccessDeniedException.class)
-	public ResponseEntity<ApiResponse> handleAccessDenied(AccessDeniedException e) {
-		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse(false, e.getMessage(), null));
-	}
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ApiResponse> handleAccessDenied(AccessDeniedException e) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .body(new ApiResponse(false, e.getMessage(), null));
+  }
 
-	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
-	public ResponseEntity<ApiResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(new ApiResponse(false, e.getMessage(), null));
-	}
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ApiResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(new ApiResponse(false, e.getMessage(), null));
+  }
 
-	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ApiResponse> handleGeneralError(Exception e) {
-		log.error("Unhandled Exception", e);
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(new ApiResponse(false, e.getMessage(), null));
-	}
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ApiResponse> handleNotFound(NoResourceFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(new ApiResponse(false, "Endpoint not found", null));
+  }
+
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<ApiResponse> handleGeneralError(Exception e) {
+    log.error("Unhandled Exception", e);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(new ApiResponse(false, e.getMessage(), null));
+  }
 }

@@ -1,5 +1,6 @@
 package com.smf.repo;
 
+import com.smf.model.User;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,7 +11,6 @@ import com.smf.model.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
-
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);

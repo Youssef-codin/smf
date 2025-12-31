@@ -1,13 +1,18 @@
 package com.smf.service.device;
 
-import com.smf.dto.device.DeviceResponse;
 import com.smf.dto.device.DeviceRegisterRequest;
-import com.smf.util.AppError;
+import com.smf.dto.device.DeviceResponse;
+import com.smf.dto.device.DeviceTestRequest;
 import com.smf.model.Device;
 import com.smf.model.User;
 import com.smf.model.enums.DeviceStatus;
 import com.smf.repo.DeviceRepository;
 import com.smf.repo.UserRepository;
+import com.smf.util.AppError;
+import java.sql.Timestamp;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +32,10 @@ public class DeviceService implements IDeviceService {
                          UserRepository userRepository) {
         this.deviceRepository = deviceRepository;
         this.userRepository = userRepository;
+    }
+  
+    public void test(DeviceTestRequest request) {
+      logger.info("Received test payload from device: {}", request);
     }
 
     @Override
