@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 public class UserRequest {
 
     @NotBlank
-    private String fullName;
+    private String username;
 
     @Email
     @NotBlank
@@ -17,22 +17,22 @@ public class UserRequest {
 
     public UserRequest() {}
 
-    public String getFullName() {
-        return fullName;
+    public String getUsername() {
+        return username;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getEmail() {
         return email;
     }
-
+ 
     public void setEmail(String email) {
         this.email = email;
     }
-
+ 
     public String getPassword() {
         return password;
     }
