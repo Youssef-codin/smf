@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import com.smf.dto.api.ApiResponse;
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.dto.device.DeviceResponse;
+import com.smf.dto.device.DeviceSosRequest;
 import com.smf.dto.device.DeviceTestRequest;
 import com.smf.service.device.IDeviceService;
 
@@ -31,30 +32,45 @@ public class DeviceController {
     }
 
     @PostMapping("/test")
-    public ResponseEntity<ApiResponse> testDevice(@RequestBody @Validated DeviceTestRequest request) {
+    public ResponseEntity<ApiResponse> testDevice(
+            @RequestBody @Validated DeviceTestRequest request) {
+
         logger.info("Received test payload from device: {}", request);
-        return ResponseEntity.ok(new ApiResponse(true, "Payload received successfully", request));
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Payload received successfully", request)
+        );
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/")
-    public ResponseEntity<ApiResponse> registerDevice(@Valid @RequestBody DeviceRegisterRequest request) {
+    public ResponseEntity<ApiResponse> registerDevice(
+            @Valid @RequestBody DeviceRegisterRequest request) {
+
         DeviceResponse response = deviceService.registerDevice(request);
-        return ResponseEntity.ok(new ApiResponse(true, "Device registered successfully", response));
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Device registered successfully", response)
+        );
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/")
     public ResponseEntity<ApiResponse> getAllDevices() {
+
         List<DeviceResponse> devices = deviceService.getAllDevices();
-        return ResponseEntity.ok(new ApiResponse(true, "Devices fetched successfully", devices));
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Devices fetched successfully", devices)
+        );
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse> getDeviceById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse> getDeviceById(
+            @PathVariable UUID id) {
+
         DeviceResponse device = deviceService.getDeviceById(id);
-        return ResponseEntity.ok(new ApiResponse(true, "Device fetched successfully", device));
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Device fetched successfully", device)
+        );
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -64,13 +80,31 @@ public class DeviceController {
             @Valid @RequestBody DeviceRegisterRequest request) {
 
         DeviceResponse updated = deviceService.updateDevice(id, request);
-        return ResponseEntity.ok(new ApiResponse(true, "Device updated successfully", updated));
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Device updated successfully", updated)
+        );
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteDevice(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse> deleteDevice(
+            @PathVariable UUID id) {
+
         deviceService.deleteDevice(id);
-        return ResponseEntity.ok(new ApiResponse(true, "Device deleted successfully", null));
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Device deleted successfully", null)
+        );
+    }
+
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PostMapping("/action/sos")
+    public ResponseEntity<ApiResponse> sendSos(
+            @RequestBody @Validated DeviceSosRequest request) {
+
+        DeviceResponse response = deviceService.handleSos(request.getMacAddress());
+        return ResponseEntity.ok(
+                new ApiResponse(true, "SOS received", response)
+        );
     }
 }
