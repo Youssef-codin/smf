@@ -7,20 +7,18 @@ import com.smf.service.user.IUserService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("${api.prefix}/users")
 @PreAuthorize("hasAuthority('ADMIN')")
 public class UserController {
 
   private final IUserService userService;
-
-  public UserController(IUserService userService) {
-    this.userService = userService;
-  }
 
   @PostMapping("/")
   public ResponseEntity<ApiResponse> createUser(@Valid @RequestBody UserRequest request) {

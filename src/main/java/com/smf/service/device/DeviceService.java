@@ -13,6 +13,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,15 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class DeviceService implements IDeviceService {
 
   private final DeviceRepository deviceRepository;
   private final UserRepository userRepository;
-
-  public DeviceService(DeviceRepository deviceRepository, UserRepository userRepository) {
-    this.deviceRepository = deviceRepository;
-    this.userRepository = userRepository;
-  }
 
   public void test(DeviceTestRequest request) {
     log.info("Received test payload from device: {}", request);

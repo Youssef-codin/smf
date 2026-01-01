@@ -34,7 +34,6 @@ public class DeviceController {
   @LogEvent(eventType = EventTypes.TESTING)
   @PostMapping("/test")
   public ResponseEntity<ApiResponse> testDevice(@RequestBody @Validated DeviceTestRequest request) {
-
     logger.info("Received test payload from device: {}", request);
     return ResponseEntity.ok(new ApiResponse(true, "Payload received successfully", request));
   }
@@ -43,7 +42,6 @@ public class DeviceController {
   @PreAuthorize("hasAuthority('USER')")
   @PostMapping("/action/sos")
   public ResponseEntity<ApiResponse> sendSos(@RequestBody @Validated DeviceSosRequest request) {
-
     DeviceResponse response = deviceService.handleSos(request.getMacAddress());
     return ResponseEntity.ok(new ApiResponse(true, "SOS received", response));
   }
@@ -53,8 +51,7 @@ public class DeviceController {
   @PostMapping("/action/offline")
   public ResponseEntity<ApiResponse> deviceOffline(
       @RequestBody @Validated DeviceOfflineRequest request) {
-
-    DeviceResponse response = deviceService.handleSos(request.MacAddress());
+    DeviceResponse response = deviceService.handleOffline(request.MacAddress());
     return ResponseEntity.ok(new ApiResponse(true, "SOS received", response));
   }
 
@@ -62,7 +59,6 @@ public class DeviceController {
   @PostMapping("/")
   public ResponseEntity<ApiResponse> registerDevice(
       @Valid @RequestBody DeviceRegisterRequest request) {
-
     DeviceResponse response = deviceService.registerDevice(request);
     return ResponseEntity.ok(new ApiResponse(true, "Device registered successfully", response));
   }
