@@ -1,6 +1,7 @@
 package com.smf.controller;
 
 import com.smf.dto.api.ApiResponse;
+import com.smf.dto.device.DeviceOfflineRequest;
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.dto.device.DeviceResponse;
 import com.smf.dto.device.DeviceSosRequest;
@@ -36,6 +37,25 @@ public class DeviceController {
 
     logger.info("Received test payload from device: {}", request);
     return ResponseEntity.ok(new ApiResponse(true, "Payload received successfully", request));
+  }
+
+  @LogEvent(eventType = EventTypes.SOS_TRIGGERED)
+  @PreAuthorize("hasAuthority('USER')")
+  @PostMapping("/action/sos")
+  public ResponseEntity<ApiResponse> sendSos(@RequestBody @Validated DeviceSosRequest request) {
+
+    DeviceResponse response = deviceService.handleSos(request.getMacAddress());
+    return ResponseEntity.ok(new ApiResponse(true, "SOS received", response));
+  }
+
+  @LogEvent(eventType = EventTypes.DEVICE_OFFLINE)
+  @PreAuthorize("hasAuthority('USER')")
+  @PostMapping("/action/offline")
+  public ResponseEntity<ApiResponse> deviceOffline(
+      @RequestBody @Validated DeviceOfflineRequest request) {
+
+    DeviceResponse response = deviceService.handleSos(request.MacAddress());
+    return ResponseEntity.ok(new ApiResponse(true, "SOS received", response));
   }
 
   @PreAuthorize("hasAuthority('ADMIN')")
@@ -78,13 +98,5 @@ public class DeviceController {
 
     deviceService.deleteDevice(id);
     return ResponseEntity.ok(new ApiResponse(true, "Device deleted successfully", null));
-  }
-
-  @PreAuthorize("hasAuthority('ADMIN')")
-  @PostMapping("/action/sos")
-  public ResponseEntity<ApiResponse> sendSos(@RequestBody @Validated DeviceSosRequest request) {
-
-    DeviceResponse response = deviceService.handleSos(request.getMacAddress());
-    return ResponseEntity.ok(new ApiResponse(true, "SOS received", response));
   }
 }

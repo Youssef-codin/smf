@@ -132,6 +132,18 @@ public class DeviceService implements IDeviceService {
     return mapToDeviceResponse(device);
   }
 
+  public DeviceResponse handleOffline(String macAddress) {
+    Device device =
+        deviceRepository
+            .findByMacAddress(macAddress)
+            .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
+
+    device.setStatus(DeviceStatus.OFFLINE);
+    device = deviceRepository.save(device);
+
+    return mapToDeviceResponse(device);
+  }
+
   private DeviceResponse mapToDeviceResponse(Device device) {
     return new DeviceResponse(
         device.getId(),

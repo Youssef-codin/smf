@@ -19,5 +19,7 @@ public interface IDeviceService {
 
   DeviceResponse handleSos(String macAddress);
 
+  DeviceResponse handleOffline(String macAddress);
+
   void test(DeviceTestRequest request);
 }
