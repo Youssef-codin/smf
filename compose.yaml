@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:17
+    image: postgres:17-apline
     container_name: smf-db
     restart: always
     environment:
