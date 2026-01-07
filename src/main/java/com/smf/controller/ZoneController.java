@@ -27,21 +27,21 @@ public class ZoneController {
   }
 
   @GetMapping("/")
-  public ResponseEntity<ApiResponse> getAllZones() {
-    List<ZoneResponse> zones = zoneService.getAllZones();
+  public ResponseEntity<ApiResponse> getZones(@RequestParam(required = false) String name) {
+    List<ZoneResponse> zones;
+    if (name != null) {
+      zones = zoneService.searchByName(name);
+    } else {
+      zones = zoneService.getAllZones();
+    }
+
     return ResponseEntity.ok(new ApiResponse(true, "Zones fetched successfully", zones));
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<ApiResponse> searchByName(@PathVariable UUID id) {
+  public ResponseEntity<ApiResponse> getZoneById(@PathVariable UUID id) {
     ZoneResponse zone = zoneService.getZoneById(id);
     return ResponseEntity.ok(new ApiResponse(true, "Zone fetched successfully", zone));
-  }
-
-  @GetMapping("/")
-  public ResponseEntity<ApiResponse> getByName(@RequestParam String name) {
-    List<ZoneResponse> zones = zoneService.searchByName(name);
-    return ResponseEntity.ok(new ApiResponse(true, "Zone fetched successfully", zones));
   }
 
   @PutMapping("/{id}")
