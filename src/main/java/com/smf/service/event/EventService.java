@@ -1,19 +1,20 @@
 package com.smf.service.event;
 
+import com.smf.dto.device.DeviceEventRequest;
 import com.smf.model.Event;
+import com.smf.model.enums.EventTypes;
 import com.smf.repo.EventRepository;
+import com.smf.util.LogEvent;
 import java.time.Instant;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+@RequiredArgsConstructor
 @Service
 public class EventService implements IEventService {
 
   private final EventRepository eventRepo;
-
-  public EventService(EventRepository repo) {
-    this.eventRepo = repo;
-  }
 
   @Override
   public List<Event> getEvents(int since) {
@@ -25,4 +26,35 @@ public class EventService implements IEventService {
   public List<Event> getAllEvents() {
     return eventRepo.findAll();
   }
+
+  @Override
+  public void processEvent(DeviceEventRequest req) {
+    switch (req.event()) {
+      case DEVICE_OFFLINE -> handleOffline(req.macAddress());
+      case DEVICE_ONLINE -> handleOnline(req.macAddress());
+      case SOS_TRIGGERED -> handleSos(req.macAddress());
+      case ACCESS_DENIED -> handleDenied(req.macAddress());
+      case ACCESS_GRANTED -> handleGranted(req.macAddress());
+      case TESTING -> handleTest(req.macAddress());
+    }
+  }
+
+  // NOTE:Could add business logic to these if needed
+  @LogEvent(eventType = EventTypes.TESTING)
+  private void handleTest(String macAddress) {}
+
+  @LogEvent(eventType = EventTypes.ACCESS_DENIED)
+  private void handleDenied(String macAddress) {}
+
+  @LogEvent(eventType = EventTypes.DEVICE_ONLINE)
+  private void handleOnline(String macAddress) {}
+
+  @LogEvent(eventType = EventTypes.ACCESS_GRANTED)
+  private void handleGranted(String macAddress) {}
+
+  @LogEvent(eventType = EventTypes.SOS_TRIGGERED)
+  private void handleSos(String macAddress) {}
+
+  @LogEvent(eventType = EventTypes.DEVICE_OFFLINE)
+  private void handleOffline(String macAddress) {}
 }
