@@ -1,12 +1,10 @@
 package com.smf.controller;
 
 import com.smf.dto.api.ApiResponse;
-import com.smf.dto.device.DeviceEventRequest;
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.dto.device.DeviceResponse;
 import com.smf.dto.device.DeviceTestRequest;
 import com.smf.model.enums.EventTypes;
-import com.smf.service.access.IAccessService;
 import com.smf.service.device.IDeviceService;
 import com.smf.util.LogEvent;
 import jakarta.validation.Valid;
@@ -28,20 +26,12 @@ public class DeviceController {
   private static final Logger logger = LoggerFactory.getLogger(DeviceController.class);
 
   private final IDeviceService deviceService;
-  private final IAccessService accessService;
 
   @LogEvent(eventType = EventTypes.TESTING)
   @PostMapping("/test")
   public ResponseEntity<ApiResponse> testDevice(@RequestBody @Validated DeviceTestRequest request) {
     logger.info("Received test payload from device: {}", request);
     return ResponseEntity.ok(new ApiResponse(true, "Payload received successfully", request));
-  }
-
-  @PreAuthorize("hasAuthority('USER')")
-  @PostMapping("/action/event")
-  public ResponseEntity<ApiResponse> event(@RequestBody @Validated DeviceEventRequest request) {
-    accessService.processEvent(request);
-    return ResponseEntity.ok(new ApiResponse(true, "Event completed", null));
   }
 
   @PreAuthorize("hasAuthority('ADMIN')")
