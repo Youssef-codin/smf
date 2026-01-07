@@ -1,17 +1,18 @@
 package com.smf.controller;
 
 import com.smf.dto.api.ApiResponse;
-import com.smf.dto.device.DeviceOfflineRequest;
+import com.smf.dto.device.DeviceEventRequest;
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.dto.device.DeviceResponse;
-import com.smf.dto.device.DeviceSosRequest;
 import com.smf.dto.device.DeviceTestRequest;
 import com.smf.model.enums.EventTypes;
+import com.smf.service.access.IAccessService;
 import com.smf.service.device.IDeviceService;
 import com.smf.util.LogEvent;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -21,15 +22,13 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/devices")
+@RequiredArgsConstructor
 public class DeviceController {
 
   private static final Logger logger = LoggerFactory.getLogger(DeviceController.class);
 
   private final IDeviceService deviceService;
-
-  public DeviceController(IDeviceService deviceService) {
-    this.deviceService = deviceService;
-  }
+  private final IAccessService accessService;
 
   @LogEvent(eventType = EventTypes.TESTING)
   @PostMapping("/test")
@@ -38,21 +37,11 @@ public class DeviceController {
     return ResponseEntity.ok(new ApiResponse(true, "Payload received successfully", request));
   }
 
-  @LogEvent(eventType = EventTypes.SOS_TRIGGERED)
   @PreAuthorize("hasAuthority('USER')")
-  @PostMapping("/action/sos")
-  public ResponseEntity<ApiResponse> sendSos(@RequestBody @Validated DeviceSosRequest request) {
-    DeviceResponse response = deviceService.handleSos(request.getMacAddress());
-    return ResponseEntity.ok(new ApiResponse(true, "SOS received", response));
-  }
-
-  @LogEvent(eventType = EventTypes.DEVICE_OFFLINE)
-  @PreAuthorize("hasAuthority('USER')")
-  @PostMapping("/action/offline")
-  public ResponseEntity<ApiResponse> deviceOffline(
-      @RequestBody @Validated DeviceOfflineRequest request) {
-    DeviceResponse response = deviceService.handleOffline(request.MacAddress());
-    return ResponseEntity.ok(new ApiResponse(true, "SOS received", response));
+  @PostMapping("/action/event")
+  public ResponseEntity<ApiResponse> event(@RequestBody @Validated DeviceEventRequest request) {
+    accessService.processEvent(request);
+    return ResponseEntity.ok(new ApiResponse(true, "Event completed", null));
   }
 
   @PreAuthorize("hasAuthority('ADMIN')")

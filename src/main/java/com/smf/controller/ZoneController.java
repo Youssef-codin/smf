@@ -40,8 +40,8 @@ public class ZoneController {
 
   @GetMapping("/")
   public ResponseEntity<ApiResponse> getByName(@RequestParam String name) {
-    ZoneResponse zone = zoneService.searchByName(name);
-    return ResponseEntity.ok(new ApiResponse(true, "Zone fetched successfully", zone));
+    List<ZoneResponse> zones = zoneService.searchByName(name);
+    return ResponseEntity.ok(new ApiResponse(true, "Zone fetched successfully", zones));
   }
 
   @PutMapping("/{id}")
