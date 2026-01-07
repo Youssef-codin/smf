@@ -36,7 +36,14 @@ public class EventController {
   @PreAuthorize("hasAuthority('USER')")
   @PostMapping("/device")
   public ResponseEntity<ApiResponse> event(@RequestBody @Validated DeviceEventRequest request) {
-    service.processEvent(request);
+    switch (request.event()) {
+      case DEVICE_OFFLINE -> service.handleOffline(request.macAddress());
+      case DEVICE_ONLINE -> service.handleOnline(request.macAddress());
+      case SOS_TRIGGERED -> service.handleSos(request.macAddress());
+      case ACCESS_DENIED -> service.handleDenied(request.macAddress());
+      case ACCESS_GRANTED -> service.handleGranted(request.macAddress());
+      case TESTING -> service.handleTest(request.macAddress());
+    }
     return ResponseEntity.ok(new ApiResponse(true, "Event completed", null));
   }
 }

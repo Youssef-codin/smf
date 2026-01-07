@@ -1,6 +1,5 @@
 package com.smf.service.event;
 
-import com.smf.dto.device.DeviceEventRequest;
 import com.smf.model.Event;
 import com.smf.model.enums.EventTypes;
 import com.smf.repo.EventRepository;
@@ -27,34 +26,29 @@ public class EventService implements IEventService {
     return eventRepo.findAll();
   }
 
+  // NOTE: Could add logic later if needed
   @Override
-  public void processEvent(DeviceEventRequest req) {
-    switch (req.event()) {
-      case DEVICE_OFFLINE -> handleOffline(req.macAddress());
-      case DEVICE_ONLINE -> handleOnline(req.macAddress());
-      case SOS_TRIGGERED -> handleSos(req.macAddress());
-      case ACCESS_DENIED -> handleDenied(req.macAddress());
-      case ACCESS_GRANTED -> handleGranted(req.macAddress());
-      case TESTING -> handleTest(req.macAddress());
-    }
-  }
-
-  // NOTE:Could add business logic to these if needed
   @LogEvent(eventType = EventTypes.TESTING)
-  private void handleTest(String macAddress) {}
+  public void handleTest(String macAddress) {}
 
+  @Override
   @LogEvent(eventType = EventTypes.ACCESS_DENIED)
-  private void handleDenied(String macAddress) {}
+  public void handleDenied(String macAddress) {}
 
+  @Override
   @LogEvent(eventType = EventTypes.DEVICE_ONLINE)
-  private void handleOnline(String macAddress) {}
+  public void handleOnline(String macAddress) {}
 
+  @Override
   @LogEvent(eventType = EventTypes.ACCESS_GRANTED)
-  private void handleGranted(String macAddress) {}
+  public void handleGranted(String macAddress) {}
 
+  @Override
   @LogEvent(eventType = EventTypes.SOS_TRIGGERED)
-  private void handleSos(String macAddress) {}
+  public void handleSos(String macAddress) {}
 
+  @Override
   @LogEvent(eventType = EventTypes.DEVICE_OFFLINE)
-  private void handleOffline(String macAddress) {}
+  public void handleOffline(String macAddress) {}
 }
+

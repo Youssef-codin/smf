@@ -2,7 +2,6 @@ package com.smf.service.device;
 
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.dto.device.DeviceResponse;
-import com.smf.dto.device.DeviceTestRequest;
 import com.smf.model.Device;
 import com.smf.model.User;
 import com.smf.model.enums.DeviceStatus;
@@ -26,10 +25,6 @@ public class DeviceService implements IDeviceService {
 
   private final DeviceRepository deviceRepository;
   private final UserRepository userRepository;
-
-  public void test(DeviceTestRequest request) {
-    log.info("Received test payload from device: {}", request);
-  }
 
   @Override
   @Transactional

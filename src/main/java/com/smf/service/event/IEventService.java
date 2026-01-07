@@ -1,6 +1,5 @@
 package com.smf.service.event;
 
-import com.smf.dto.device.DeviceEventRequest;
 import com.smf.model.Event;
 import java.util.List;
 
@@ -9,5 +8,16 @@ public interface IEventService {
 
   List<Event> getAllEvents();
 
-  void processEvent(DeviceEventRequest req);
+  void handleTest(String macAddress);
+
+  void handleDenied(String macAddress);
+
+  void handleOnline(String macAddress);
+
+  void handleGranted(String macAddress);
+
+  void handleSos(String macAddress);
+
+  void handleOffline(String macAddress);
 }
+
