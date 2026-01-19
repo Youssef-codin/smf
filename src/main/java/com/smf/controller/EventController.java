@@ -33,7 +33,6 @@ public class EventController {
     return ResponseEntity.ok(new ApiResponse(true, "Events fetched successfully", events));
   }
 
-  @PreAuthorize("hasAuthority('USER')")
   @PostMapping("/device")
   public ResponseEntity<ApiResponse> event(@RequestBody @Validated DeviceEventRequest request) {
     switch (request.event()) {
