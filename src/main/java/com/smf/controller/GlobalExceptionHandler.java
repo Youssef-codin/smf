@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +22,12 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(AppError.class)
   public ResponseEntity<ApiResponse> handleAppError(AppError e) {
     return ResponseEntity.status(e.getStatus()).body(new ApiResponse(false, e.getMessage(), null));
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<ApiResponse> handleAppError(HttpMessageNotReadableException e) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(new ApiResponse(false, e.getMessage(), null));
   }
 
   @ExceptionHandler(JwtException.class)
