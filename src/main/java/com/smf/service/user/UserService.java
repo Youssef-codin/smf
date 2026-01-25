@@ -1,6 +1,8 @@
 package com.smf.service.user;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -10,7 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.smf.dto.user.UserRequest;
 import com.smf.dto.user.UserResponse;
+import com.smf.model.Role;
 import com.smf.model.User;
+import com.smf.repo.RoleRepository;
 import com.smf.repo.UserRepository;
 import com.smf.util.AppError;
 
@@ -18,11 +22,16 @@ import com.smf.util.AppError;
 public class UserService implements IUserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
+    public UserService(
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder) {
+
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -40,6 +49,25 @@ public class UserService implements IUserService {
                 passwordEncoder.encode(request.getPassword())
         );
 
+        //  ROLE LOGIC HERE
+        Set<Role> roles = new HashSet<>();
+
+        if (request.getRoles() == null || request.getRoles().isEmpty()) {
+            // default role
+            Role userRole = roleRepository.findByRoleName("ROLE_USER")
+                    .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Default role not found"));
+            roles.add(userRole);
+        } else {
+            for (String roleName : request.getRoles()) {
+                Role role = roleRepository.findByRoleName(roleName)
+                        .orElseThrow(() ->
+                                new AppError(HttpStatus.NOT_FOUND, "Role not found: " + roleName));
+                roles.add(role);
+            }
+        }
+
+        user.setRoles(roles);
+
         user = userRepository.save(user);
         return mapToResponse(user);
     }
@@ -48,7 +76,6 @@ public class UserService implements IUserService {
     public UserResponse getUserById(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "User not found"));
-
         return mapToResponse(user);
     }
 
@@ -63,6 +90,7 @@ public class UserService implements IUserService {
     @Override
     @Transactional
     public UserResponse updateUser(UUID userId, UserRequest request) {
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "User not found"));
 
