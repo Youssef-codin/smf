@@ -1,56 +1,52 @@
 package com.smf.dto.user;
 
-import java.util.Set;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.util.Set;
 
 public class UserRequest {
 
-    @NotBlank
-    private String username;
+  @NotBlank private String username;
 
-    @Email
-    @NotBlank
-    private String email;
+  @Email @NotBlank private String email;
 
-    @NotBlank
-    private String password;
+  @NotBlank private String password;
 
-    // NEW: user can pick roles
-    private Set<String> roles;
+  // NEW: user can pick roles
+  @NotNull private Set<String> roles;
 
-    public UserRequest() {}
+  public UserRequest() {}
 
-    public String getUsername() {
-        return username;
-    }
+  public String getUsername() {
+    return username;
+  }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+  public void setUsername(String username) {
+    this.username = username;
+  }
 
-    public String getEmail() {
-        return email;
-    }
-    
-    public void setEmail(String email) {
-        this.email = email;
-    }
-    
-    public String getPassword() {
-        return password;
-    }
-    
-    public void setPassword(String password) {
-        this.password = password;
-    }
+  public String getEmail() {
+    return email;
+  }
 
-    public Set<String> getRoles() {
-        return roles;
-    }
+  public void setEmail(String email) {
+    this.email = email;
+  }
 
-    public void setRoles(Set<String> roles) {
-        this.roles = roles;
-    }
+  public String getPassword() {
+    return password;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
+
+  public Set<String> getRoles() {
+    return roles;
+  }
+
+  public void setRoles(Set<String> roles) {
+    this.roles = roles;
+  }
 }
