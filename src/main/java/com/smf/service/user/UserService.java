@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,9 +39,9 @@ public class UserService implements IUserService {
     @Transactional
     public UserResponse createUser(UserRequest request) {
 
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new AppError(HttpStatus.CONFLICT, "Email already exists");
-        }
+  @Override
+  @Transactional
+  public UserResponse createUser(UserRequest request) {
 
         User user = new User(
                 request.getEmail(),
@@ -78,6 +78,8 @@ public class UserService implements IUserService {
                 .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "User not found"));
         return mapToResponse(user);
     }
+    userRepository.deleteById(userId);
+  }
 
     @Override
     public List<UserResponse> getAllUsers() {
