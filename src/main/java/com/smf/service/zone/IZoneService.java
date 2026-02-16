@@ -2,6 +2,7 @@ package com.smf.service.zone;
 
 import com.smf.dto.zone.ZoneRequest;
 import com.smf.dto.zone.ZoneResponse;
+import com.smf.model.Zone;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,4 +18,14 @@ public interface IZoneService {
   ZoneResponse updateZone(UUID id, ZoneRequest request);
 
   void deleteZone(UUID id);
+
+  boolean canDeviceAccessZone(UUID deviceId, UUID zoneId);
+
+  List<ZoneResponse> getAccessibleZones(UUID deviceId);
+
+  void assignRoleToZone(UUID zoneId, Long roleId);
+
+  void removeRoleFromZone(UUID zoneId, Long roleId);
+
+  Zone findZoneById(UUID zoneId);
 }

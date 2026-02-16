@@ -56,4 +56,18 @@ public class ZoneController {
     zoneService.deleteZone(id);
     return ResponseEntity.ok(new ApiResponse(true, "Zone deleted successfully", null));
   }
+
+  @PostMapping("/{id}/roles/{roleId}")
+  public ResponseEntity<ApiResponse> assignRoleToZone(
+      @PathVariable UUID id, @PathVariable Long roleId) {
+    zoneService.assignRoleToZone(id, roleId);
+    return ResponseEntity.ok(new ApiResponse(true, "Role assigned to zone successfully", null));
+  }
+
+  @DeleteMapping("/{id}/roles/{roleId}")
+  public ResponseEntity<ApiResponse> removeRoleFromZone(
+      @PathVariable UUID id, @PathVariable Long roleId) {
+    zoneService.removeRoleFromZone(id, roleId);
+    return ResponseEntity.ok(new ApiResponse(true, "Role removed from zone successfully", null));
+  }
 }
