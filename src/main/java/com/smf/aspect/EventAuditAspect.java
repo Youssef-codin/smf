@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 @Aspect
@@ -38,7 +39,8 @@ public class EventAuditAspect {
     }
 
     if (isZoneEntry) {
-      handleZoneEntryEvent(macAddress, (ApiResponse) returnValue);
+      ResponseEntity<ApiResponse> responseEntity = (ResponseEntity<ApiResponse>) returnValue;
+      handleZoneEntryEvent(macAddress, responseEntity.getBody());
     } else {
       eventRepo.save(new Event(logEvent.eventType(), macAddress, "{}"));
     }
