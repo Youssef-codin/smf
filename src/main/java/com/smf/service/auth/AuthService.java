@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // ✅ ADDED
 
 import com.smf.dto.auth.JwtResponse;
 import com.smf.dto.auth.LoginRequest;
@@ -41,9 +42,12 @@ public class AuthService implements IAuthService {
 
     @Override
     public JwtResponse login(LoginRequest req) {
-        Authentication auth = authManager.authenticate(new UsernamePasswordAuthenticationToken(
-                req.email(), req.password()));
+        Authentication auth = authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        req.email(), req.password()));
+
         SecurityContextHolder.getContext().setAuthentication(auth);
+
         String jwt = jwtUtils.generateToken(auth);
         AppUserDetails userDetails = (AppUserDetails) auth.getPrincipal();
 
@@ -51,15 +55,24 @@ public class AuthService implements IAuthService {
     }
 
     @Override
+    @Transactional // ✅ ADDED TO PREVENT RACE CONDITION
     public User register(RegisterRequest req) {
+
         boolean alreadyExist = userRepo.existsByEmail(req.email());
-        Role userRole = roleRepo.findByRoleName("USER")
-                .orElseThrow(() -> new AppError(HttpStatus.INTERNAL_SERVER_ERROR, "Default role not found"));
 
         if (alreadyExist)
             throw new AppError(HttpStatus.CONFLICT, "Email Already Used");
 
-        User newUser = new User(req.email(), req.username(), passwordEncoder.encode(req.password()));
+        Role userRole = roleRepo.findByRoleName("USER")
+                .orElseThrow(() ->
+                        new AppError(HttpStatus.INTERNAL_SERVER_ERROR, "Default role not found"));
+
+        User newUser = new User(
+                req.email(),
+                req.username(),
+                passwordEncoder.encode(req.password())
+        );
+
         newUser.setRoles(Set.of(userRole));
 
         return userRepo.save(newUser);
