@@ -1,5 +1,7 @@
 package com.smf.service.zone;
 
+import com.smf.dto.zone.ZoneAccessResult;
+import com.smf.dto.zone.ZoneEntryRequest;
 import com.smf.dto.zone.ZoneRequest;
 import com.smf.dto.zone.ZoneResponse;
 import com.smf.model.Zone;
@@ -28,4 +30,6 @@ public interface IZoneService {
   void removeRoleFromZone(UUID zoneId, Long roleId);
 
   Zone findZoneById(UUID zoneId);
+
+  ZoneAccessResult checkZoneAccess(String macAddress, ZoneEntryRequest request);
 }

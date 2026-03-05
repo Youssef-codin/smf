@@ -68,6 +68,20 @@ public class RoleService implements IRoleService {
     roleRepository.deleteById(id);
   }
 
+  @Override
+  public Role findRoleById(Long id) {
+    return roleRepository
+        .findById(id)
+        .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Role not found"));
+  }
+
+  @Override
+  public Role findRoleByName(String name) {
+    return roleRepository
+        .findByRoleName(name)
+        .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Role not found: " + name));
+  }
+
   private RoleResponse mapToResponse(Role role) {
     return new RoleResponse(role.getId(), role.getRoleName());
   }
