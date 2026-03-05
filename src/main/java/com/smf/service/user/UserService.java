@@ -4,8 +4,8 @@ import com.smf.dto.user.UserRequest;
 import com.smf.dto.user.UserResponse;
 import com.smf.model.Role;
 import com.smf.model.User;
-import com.smf.repo.RoleRepository;
 import com.smf.repo.UserRepository;
+import com.smf.service.role.IRoleService;
 import com.smf.util.AppError;
 import java.util.HashSet;
 import java.util.List;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService implements IUserService {
 
   private final UserRepository userRepository;
-  private final RoleRepository roleRepository;
+  private final IRoleService roleService;
   private final PasswordEncoder passwordEncoder;
 
   @Override
@@ -40,18 +40,11 @@ public class UserService implements IUserService {
 
     if (request.getRoles() == null || request.getRoles().isEmpty()) {
       // default role
-      Role userRole =
-          roleRepository
-              .findByRoleName("ROLE_USER")
-              .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Default role not found"));
+      Role userRole = roleService.findRoleByName("ROLE_USER");
       roles.add(userRole);
     } else {
       for (String roleName : request.getRoles()) {
-        Role role =
-            roleRepository
-                .findByRoleName(roleName)
-                .orElseThrow(
-                    () -> new AppError(HttpStatus.NOT_FOUND, "Role not found: " + roleName));
+        Role role = roleService.findRoleByName(roleName);
         roles.add(role);
       }
     }
@@ -100,6 +93,13 @@ public class UserService implements IUserService {
       throw new AppError(HttpStatus.NOT_FOUND, "User not found");
     }
     userRepository.deleteById(userId);
+  }
+
+  @Override
+  public User findUserById(UUID userId) {
+    return userRepository
+        .findById(userId)
+        .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "User not found"));
   }
 
   private UserResponse mapToResponse(User user) {

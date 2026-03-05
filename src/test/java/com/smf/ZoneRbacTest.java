@@ -1,14 +1,21 @@
 package com.smf;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import com.smf.dto.zone.ZoneAccessResult;
+import com.smf.dto.zone.ZoneEntryRequest;
 import com.smf.dto.zone.ZoneRequest;
 import com.smf.dto.zone.ZoneResponse;
 import com.smf.model.Device;
 import com.smf.model.Role;
 import com.smf.model.User;
 import com.smf.model.Zone;
-import com.smf.repo.DeviceRepository;
-import com.smf.repo.RoleRepository;
 import com.smf.repo.ZoneRepository;
+import com.smf.service.device.IDeviceService;
+import com.smf.service.event.IEventService;
+import com.smf.service.role.IRoleService;
 import com.smf.service.zone.ZoneService;
 import com.smf.util.AppError;
 import java.util.*;
@@ -20,16 +27,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class ZoneRbacTest {
 
   @Mock private ZoneRepository zoneRepository;
-  @Mock private RoleRepository roleRepository;
-  @Mock private DeviceRepository deviceRepository;
+  @Mock private IRoleService roleService;
+  @Mock private IDeviceService deviceService;
+  @Mock private IEventService eventService;
 
   @InjectMocks private ZoneService zoneService;
 
@@ -111,7 +115,7 @@ class ZoneRbacTest {
 
   @Test
   void engineerCanAccessRestrictedZone() {
-    when(deviceRepository.findById(engineerDevice.getId())).thenReturn(Optional.of(engineerDevice));
+    when(deviceService.findDeviceById(engineerDevice.getId())).thenReturn(engineerDevice);
     when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
     boolean canAccess = zoneService.canDeviceAccessZone(engineerDevice.getId(), restrictedZone.getId());
@@ -121,7 +125,7 @@ class ZoneRbacTest {
 
   @Test
   void workerCannotAccessRestrictedZone() {
-    when(deviceRepository.findById(workerDevice.getId())).thenReturn(Optional.of(workerDevice));
+    when(deviceService.findDeviceById(workerDevice.getId())).thenReturn(workerDevice);
     when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
     boolean canAccess = zoneService.canDeviceAccessZone(workerDevice.getId(), restrictedZone.getId());
@@ -131,8 +135,8 @@ class ZoneRbacTest {
 
   @Test
   void everyoneCanAccessOpenZone() {
-    when(deviceRepository.findById(engineerDevice.getId())).thenReturn(Optional.of(engineerDevice));
-    when(deviceRepository.findById(workerDevice.getId())).thenReturn(Optional.of(workerDevice));
+    when(deviceService.findDeviceById(engineerDevice.getId())).thenReturn(engineerDevice);
+    when(deviceService.findDeviceById(workerDevice.getId())).thenReturn(workerDevice);
     when(zoneRepository.findById(openZone.getId())).thenReturn(Optional.of(openZone));
 
     boolean engineerCanAccess = zoneService.canDeviceAccessZone(engineerDevice.getId(), openZone.getId());
@@ -144,8 +148,8 @@ class ZoneRbacTest {
 
   @Test
   void getAccessibleZonesReturnsCorrectZones() {
-    when(deviceRepository.findById(engineerDevice.getId())).thenReturn(Optional.of(engineerDevice));
-    when(deviceRepository.findById(workerDevice.getId())).thenReturn(Optional.of(workerDevice));
+    when(deviceService.findDeviceById(engineerDevice.getId())).thenReturn(engineerDevice);
+    when(deviceService.findDeviceById(workerDevice.getId())).thenReturn(workerDevice);
     when(zoneRepository.findAll()).thenReturn(List.of(restrictedZone, openZone));
 
     List<ZoneResponse> engineerZones = zoneService.getAccessibleZones(engineerDevice.getId());
@@ -159,14 +163,14 @@ class ZoneRbacTest {
   void assignAndRemoveRoleFromZone() {
     Zone zone = createZone(UUID.randomUUID(), "Test Zone", new HashSet<>());
     when(zoneRepository.findById(zone.getId())).thenReturn(Optional.of(zone));
-    when(roleRepository.findById(workerRole.getId())).thenReturn(Optional.of(workerRole));
+    when(roleService.findRoleById(workerRole.getId())).thenReturn(workerRole);
     when(zoneRepository.save(any(Zone.class))).thenReturn(zone);
 
     zoneService.assignRoleToZone(zone.getId(), workerRole.getId());
 
     assertTrue(zone.getAllowedRoles().contains(workerRole), "Worker role should be assigned to zone");
 
-    when(deviceRepository.findById(workerDevice.getId())).thenReturn(Optional.of(workerDevice));
+    when(deviceService.findDeviceById(workerDevice.getId())).thenReturn(workerDevice);
 
     boolean canAccessBefore = zoneService.canDeviceAccessZone(workerDevice.getId(), zone.getId());
     assertTrue(canAccessBefore, "Worker should access zone after role assignment");
@@ -181,7 +185,7 @@ class ZoneRbacTest {
 
   @Test
   void userWithMultipleRoles_oneAllowed_shouldGrantAccess() {
-    when(deviceRepository.findById(multiRoleDevice.getId())).thenReturn(Optional.of(multiRoleDevice));
+    when(deviceService.findDeviceById(multiRoleDevice.getId())).thenReturn(multiRoleDevice);
     when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
     boolean canAccess = zoneService.canDeviceAccessZone(multiRoleDevice.getId(), restrictedZone.getId());
@@ -191,7 +195,7 @@ class ZoneRbacTest {
 
   @Test
   void zoneWithMultipleRoles_userHasNone_shouldDenyAccess() {
-    when(deviceRepository.findById(workerDevice.getId())).thenReturn(Optional.of(workerDevice));
+    when(deviceService.findDeviceById(workerDevice.getId())).thenReturn(workerDevice);
     when(zoneRepository.findById(multiRoleZone.getId())).thenReturn(Optional.of(multiRoleZone));
 
     boolean canAccess = zoneService.canDeviceAccessZone(workerDevice.getId(), multiRoleZone.getId());
@@ -202,11 +206,13 @@ class ZoneRbacTest {
   @Test
   void deviceNotFound_shouldThrowException() {
     UUID nonExistentDeviceId = UUID.randomUUID();
-    when(deviceRepository.findById(nonExistentDeviceId)).thenReturn(Optional.empty());
+    when(deviceService.findDeviceById(nonExistentDeviceId))
+        .thenThrow(new AppError(HttpStatus.NOT_FOUND, "Device not found"));
 
-    AppError exception = assertThrows(AppError.class, () ->
-        zoneService.canDeviceAccessZone(nonExistentDeviceId, restrictedZone.getId())
-    );
+    AppError exception =
+        assertThrows(
+            AppError.class,
+            () -> zoneService.canDeviceAccessZone(nonExistentDeviceId, restrictedZone.getId()));
 
     assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     assertEquals("Device not found", exception.getMessage());
@@ -215,12 +221,13 @@ class ZoneRbacTest {
   @Test
   void zoneNotFound_shouldThrowException() {
     UUID nonExistentZoneId = UUID.randomUUID();
-    when(deviceRepository.findById(engineerDevice.getId())).thenReturn(Optional.of(engineerDevice));
+    when(deviceService.findDeviceById(engineerDevice.getId())).thenReturn(engineerDevice);
     when(zoneRepository.findById(nonExistentZoneId)).thenReturn(Optional.empty());
 
-    AppError exception = assertThrows(AppError.class, () ->
-        zoneService.canDeviceAccessZone(engineerDevice.getId(), nonExistentZoneId)
-    );
+    AppError exception =
+        assertThrows(
+            AppError.class,
+            () -> zoneService.canDeviceAccessZone(engineerDevice.getId(), nonExistentZoneId));
 
     assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     assertEquals("Zone not found", exception.getMessage());
@@ -228,7 +235,7 @@ class ZoneRbacTest {
 
   @Test
   void userWithNoRoles_shouldDenyAccess() {
-    when(deviceRepository.findById(noRoleDevice.getId())).thenReturn(Optional.of(noRoleDevice));
+    when(deviceService.findDeviceById(noRoleDevice.getId())).thenReturn(noRoleDevice);
     when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
     boolean canAccess = zoneService.canDeviceAccessZone(noRoleDevice.getId(), restrictedZone.getId());
@@ -238,36 +245,12 @@ class ZoneRbacTest {
 
   @Test
   void adminUser_shouldFollowNormalRules() {
-    when(deviceRepository.findById(adminDevice.getId())).thenReturn(Optional.of(adminDevice));
+    when(deviceService.findDeviceById(adminDevice.getId())).thenReturn(adminDevice);
     when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
     boolean canAccess = zoneService.canDeviceAccessZone(adminDevice.getId(), restrictedZone.getId());
 
-    assertTrue(canAccess, "Admin with ENGINEER role should access zone that allows ENGINEER");
-  }
-
-  @Test
-  void assignDuplicateRole_shouldBeIdempotent() {
-    when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
-    when(roleRepository.findById(engineerRole.getId())).thenReturn(Optional.of(engineerRole));
-    when(zoneRepository.save(any(Zone.class))).thenReturn(restrictedZone);
-
-    int initialSize = restrictedZone.getAllowedRoles().size();
-
-    zoneService.assignRoleToZone(restrictedZone.getId(), engineerRole.getId());
-
-    assertEquals(initialSize, restrictedZone.getAllowedRoles().size(), "Duplicate assignment should not add role again");
-  }
-
-  @Test
-  void removeNonExistentRole_shouldBeIdempotent() {
-    Zone zone = createZone(UUID.randomUUID(), "Test Zone", new HashSet<>());
-    when(zoneRepository.findById(zone.getId())).thenReturn(Optional.of(zone));
-    when(roleRepository.findById(workerRole.getId())).thenReturn(Optional.of(workerRole));
-    when(zoneRepository.save(any(Zone.class))).thenReturn(zone);
-
-    assertDoesNotThrow(() -> zoneService.removeRoleFromZone(zone.getId(), workerRole.getId()));
-    assertTrue(zone.getAllowedRoles().isEmpty(), "Zone should still have no roles");
+    assertTrue(canAccess, "Admin with ENGINEER role should access restricted zone");
   }
 
   @Test
@@ -298,6 +281,15 @@ class ZoneRbacTest {
   }
 
   @Test
+  void getAllZones_success() {
+    when(zoneRepository.findAll()).thenReturn(List.of(restrictedZone, openZone));
+
+    List<ZoneResponse> zones = zoneService.getAllZones();
+
+    assertEquals(2, zones.size());
+  }
+
+  @Test
   void getZoneById_success() {
     when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
@@ -317,15 +309,6 @@ class ZoneRbacTest {
 
     assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     assertEquals("Zone not found", exception.getMessage());
-  }
-
-  @Test
-  void getAllZones_success() {
-    when(zoneRepository.findAll()).thenReturn(List.of(restrictedZone, openZone));
-
-    List<ZoneResponse> zones = zoneService.getAllZones();
-
-    assertEquals(2, zones.size());
   }
 
   @Test
@@ -380,9 +363,9 @@ class ZoneRbacTest {
   @Test
   void deleteZone_success() {
     when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
-    doNothing().when(zoneRepository).delete(restrictedZone);
 
-    assertDoesNotThrow(() -> zoneService.deleteZone(restrictedZone.getId()));
+    zoneService.deleteZone(restrictedZone.getId());
+
     verify(zoneRepository).delete(restrictedZone);
   }
 
@@ -416,5 +399,42 @@ class ZoneRbacTest {
 
     assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     assertEquals("Zone not found", exception.getMessage());
+  }
+
+  @Test
+  void assignDuplicateRole_shouldBeIdempotent() {
+    Zone zone = createZone(UUID.randomUUID(), "Test Zone", new HashSet<>());
+    when(zoneRepository.findById(zone.getId())).thenReturn(Optional.of(zone));
+    when(roleService.findRoleById(engineerRole.getId())).thenReturn(engineerRole);
+    when(zoneRepository.save(any(Zone.class))).thenReturn(zone);
+
+    zoneService.assignRoleToZone(zone.getId(), engineerRole.getId());
+    zoneService.assignRoleToZone(zone.getId(), engineerRole.getId());
+
+    assertEquals(1, zone.getAllowedRoles().size(), "Role should only be added once");
+  }
+
+  @Test
+  void removeNonExistentRole_shouldBeIdempotent() {
+    Zone zone = createZone(UUID.randomUUID(), "Test Zone", new HashSet<>());
+    when(zoneRepository.findById(zone.getId())).thenReturn(Optional.of(zone));
+    when(roleService.findRoleById(workerRole.getId())).thenReturn(workerRole);
+    when(zoneRepository.save(any(Zone.class))).thenReturn(zone);
+
+    assertDoesNotThrow(() -> zoneService.removeRoleFromZone(zone.getId(), workerRole.getId()));
+    assertTrue(zone.getAllowedRoles().isEmpty());
+  }
+
+  @Test
+  void checkZoneAccess_success() {
+    ZoneEntryRequest request = new ZoneEntryRequest(restrictedZone.getId());
+    when(deviceService.findDeviceByMacAddress(engineerDevice.getMacAddress())).thenReturn(engineerDevice);
+    when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
+
+    ZoneAccessResult result = zoneService.checkZoneAccess(engineerDevice.getMacAddress(), request);
+
+    assertTrue(result.granted());
+    assertEquals(restrictedZone.getId(), result.zoneId());
+    verify(eventService).logZoneAccessEvent(result, engineerDevice.getMacAddress());
   }
 }

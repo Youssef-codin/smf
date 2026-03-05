@@ -6,7 +6,7 @@ import com.smf.model.Device;
 import com.smf.model.User;
 import com.smf.model.enums.DeviceStatus;
 import com.smf.repo.DeviceRepository;
-import com.smf.repo.UserRepository;
+import com.smf.service.user.IUserService;
 import com.smf.util.AppError;
 import java.sql.Timestamp;
 import java.util.List;
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeviceService implements IDeviceService {
 
   private final DeviceRepository deviceRepository;
-  private final UserRepository userRepository;
+  private final IUserService userService;
 
   @Override
   @Transactional
@@ -39,10 +39,7 @@ public class DeviceService implements IDeviceService {
       throw new AppError(HttpStatus.BAD_REQUEST, "last_seen_timestamp cannot be in the future");
     }
 
-    User owner =
-        userRepository
-            .findById(UUID.fromString(request.getOwnerId()))
-            .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Owner not found"));
+    User owner = userService.findUserById(UUID.fromString(request.getOwnerId()));
 
     Device device =
         new Device(
@@ -83,10 +80,7 @@ public class DeviceService implements IDeviceService {
             .findById(deviceId)
             .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
 
-    User owner =
-        userRepository
-            .findById(UUID.fromString(request.getOwnerId()))
-            .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Owner not found"));
+    User owner = userService.findUserById(UUID.fromString(request.getOwnerId()));
 
     device.setOwner(owner);
     device.setLastLocationLat(request.getLastLocationLat());
@@ -134,6 +128,20 @@ public class DeviceService implements IDeviceService {
     device = deviceRepository.save(device);
 
     return mapToDeviceResponse(device);
+  }
+
+  @Override
+  public Device findDeviceByMacAddress(String macAddress) {
+    return deviceRepository
+        .findByMacAddress(macAddress)
+        .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
+  }
+
+  @Override
+  public Device findDeviceById(UUID deviceId) {
+    return deviceRepository
+        .findById(deviceId)
+        .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
   }
 
   private DeviceResponse mapToDeviceResponse(Device device) {
