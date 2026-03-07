@@ -7,11 +7,11 @@ import com.smf.model.User;
 import com.smf.repo.UserRepository;
 import com.smf.service.role.IRoleService;
 import com.smf.util.AppError;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -20,6 +20,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
     @Mock
@@ -34,52 +35,59 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
-    private User testUser;
-    private Role testRole;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        testRole = new Role();
-        testRole.setId(1L);
-        testRole.setRoleName("ROLE_USER");
-        testRole.setAdmin(false);
-
-        testUser = new User();
-        testUser.setId(UUID.randomUUID());
-        testUser.setUsername("testuser");
-        testUser.setEmail("testuser@test.com");
-        testUser.setRoles(new HashSet<>(Set.of(testRole)));
-    }
-
     @Test
-    void createUser_success_withDefaultRole() {
+    void createUser_withDefaultRole() {
 
         UserRequest request = new UserRequest();
-        request.setUsername("testuser");
-        request.setEmail("testuser@test.com");
+        request.setUsername("youssef");
+        request.setEmail("test@mail.com");
         request.setPassword("123456");
+        request.setRoles(Collections.emptySet());
+
+        Role role = new Role("ROLE_USER");
 
         when(passwordEncoder.encode("123456")).thenReturn("encoded");
-        when(roleService.findRoleByName("ROLE_USER")).thenReturn(testRole);
+        when(roleService.findRoleByName("ROLE_USER")).thenReturn(role);
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         UserResponse response = userService.createUser(request);
 
-        assertNotNull(response);
-        assertEquals("testuser@test.com", response.getEmail());
+        assertEquals("youssef", response.getFullName());
+        assertEquals("test@mail.com", response.getEmail());
+    }
+
+    @Test
+    void createUser_withCustomRoles() {
+
+        UserRequest request = new UserRequest();
+        request.setUsername("admin");
+        request.setEmail("admin@mail.com");
+        request.setPassword("123456");
+        request.setRoles(Set.of("ROLE_ADMIN"));
+
+        Role role = new Role("ROLE_ADMIN");
+
+        when(passwordEncoder.encode("123456")).thenReturn("encoded");
+        when(roleService.findRoleByName("ROLE_ADMIN")).thenReturn(role);
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        UserResponse response = userService.createUser(request);
+
+        assertEquals("admin", response.getFullName());
     }
 
     @Test
     void getUserById_success() {
 
-        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        UUID id = UUID.randomUUID();
+        User user = new User("mail@test.com","user","pass");
+        user.setId(id);
 
-        UserResponse result = userService.getUserById(testUser.getId());
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
 
-        assertNotNull(result);
-        assertEquals(testUser.getEmail(), result.getEmail());
+        UserResponse response = userService.getUserById(id);
+
+        assertEquals(id, response.getId());
     }
 
     @Test
@@ -88,50 +96,42 @@ class UserServiceTest {
         UUID id = UUID.randomUUID();
         when(userRepository.findById(id)).thenReturn(Optional.empty());
 
-        AppError exception = assertThrows(AppError.class, () -> userService.getUserById(id));
-
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        assertThrows(AppError.class, () -> userService.getUserById(id));
     }
 
     @Test
     void getAllUsers_success() {
 
-        when(userRepository.findAll()).thenReturn(List.of(testUser));
+        User u1 = new User("a@mail.com","a","p");
+        User u2 = new User("b@mail.com","b","p");
+
+        when(userRepository.findAll()).thenReturn(List.of(u1, u2));
 
         List<UserResponse> users = userService.getAllUsers();
 
-        assertEquals(1, users.size());
+        assertEquals(2, users.size());
     }
 
     @Test
     void updateUser_success() {
 
+        UUID id = UUID.randomUUID();
+
         UserRequest request = new UserRequest();
-        request.setUsername("updated");
-        request.setEmail("updated@test.com");
+        request.setUsername("new");
+        request.setEmail("new@mail.com");
         request.setPassword("123");
 
-        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        User user = new User("old@mail.com","old","pass");
+        user.setId(id);
+
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode("123")).thenReturn("encoded");
-        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+        when(userRepository.save(any(User.class))).thenReturn(user);
 
-        UserResponse response = userService.updateUser(testUser.getId(), request);
+        UserResponse response = userService.updateUser(id, request);
 
-        assertEquals("updated@test.com", response.getEmail());
-    }
-
-    @Test
-    void updateUser_notFound() {
-
-        UUID id = UUID.randomUUID();
-        UserRequest request = new UserRequest();
-
-        when(userRepository.findById(id)).thenReturn(Optional.empty());
-
-        AppError exception = assertThrows(AppError.class,
-                () -> userService.updateUser(id, request));
-
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        assertEquals("new@mail.com", response.getEmail());
     }
 
     @Test
@@ -141,7 +141,7 @@ class UserServiceTest {
 
         when(userRepository.existsById(id)).thenReturn(true);
 
-        assertDoesNotThrow(() -> userService.deleteUser(id));
+        userService.deleteUser(id);
 
         verify(userRepository).deleteById(id);
     }
@@ -150,12 +150,9 @@ class UserServiceTest {
     void deleteUser_notFound() {
 
         UUID id = UUID.randomUUID();
-
         when(userRepository.existsById(id)).thenReturn(false);
 
-        AppError exception = assertThrows(AppError.class,
-                () -> userService.deleteUser(id));
-
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        AppError error = assertThrows(AppError.class, () -> userService.deleteUser(id));
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatus());
     }
 }

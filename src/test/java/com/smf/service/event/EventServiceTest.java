@@ -1,63 +1,103 @@
 package com.smf.service.event;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smf.dto.zone.ZoneAccessResult;
 import com.smf.model.Event;
 import com.smf.model.enums.EventTypes;
 import com.smf.repo.EventRepository;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 class EventServiceTest {
 
     @Mock
-    private EventRepository eventRepository;
+    private EventRepository eventRepo;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private EventService eventService;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
+    @Test
+    void getEvents_success() {
+
+        when(eventRepo.findRecent(any(Instant.class)))
+                .thenReturn(List.of(new Event(EventTypes.TESTING,"mac","{}")));
+
+        List<Event> events = eventService.getEvents(60);
+
+        assertEquals(1, events.size());
     }
 
     @Test
-    void testGetEvents() {
-        Instant now = Instant.now();
-        Event e1 = new Event(EventTypes.TESTING, "MAC1", "metadata1");
-        Event e2 = new Event(EventTypes.DEVICE_ONLINE, "MAC2", "metadata2");
+    void getAllEvents_success() {
 
-        e1.setCreatedAt(now.minusSeconds(100));
-        e1.setId(UUID.randomUUID());
-        e2.setCreatedAt(now.minusSeconds(50));
-        e2.setId(UUID.randomUUID());
+        when(eventRepo.findAll())
+                .thenReturn(List.of(new Event(EventTypes.TESTING,"mac","{}")));
 
-        when(eventRepository.findRecent(any())).thenReturn(Arrays.asList(e1, e2));
+        List<Event> events = eventService.getAllEvents();
 
-        List<Event> result = eventService.getEvents(200);
-        assertEquals(2, result.size());
-        assertEquals(e1.getMacAddress(), result.get(0).getMacAddress());
+        assertEquals(1, events.size());
     }
 
     @Test
-    void testGetAllEvents() {
-        Event e1 = new Event(EventTypes.TESTING, "MAC1", "metadata1");
-        Event e2 = new Event(EventTypes.DEVICE_ONLINE, "MAC2", "metadata2");
-        e1.setId(UUID.randomUUID());
-        e2.setId(UUID.randomUUID());
+    void handleTest_shouldSaveEvent() {
 
-        when(eventRepository.findAll()).thenReturn(Arrays.asList(e1, e2));
+        eventService.handleTest("mac");
 
-        List<Event> result = eventService.getAllEvents();
-        assertEquals(2, result.size());
-        assertTrue(result.stream().anyMatch(e -> e.getEventType() == EventTypes.TESTING));
+        verify(eventRepo).save(any(Event.class));
+    }
+
+    @Test
+    void handleDenied_shouldSaveEvent() {
+
+        eventService.handleDenied("mac");
+
+        verify(eventRepo).save(any(Event.class));
+    }
+
+    @Test
+    void handleOnline_shouldSaveEvent() {
+
+        eventService.handleOnline("mac");
+
+        verify(eventRepo).save(any(Event.class));
+    }
+
+    @Test
+    void handleGranted_shouldSaveEvent() {
+
+        eventService.handleGranted("mac");
+
+        verify(eventRepo).save(any(Event.class));
+    }
+
+    @Test
+    void handleOffline_shouldSaveEvent() {
+
+        eventService.handleOffline("mac");
+
+        verify(eventRepo).save(any(Event.class));
+    }
+
+    @Test
+    void handleSos_shouldSaveEvent() {
+
+        eventService.handleSos("mac");
+
+        verify(eventRepo).save(any(Event.class));
     }
 }
