@@ -1,9 +1,11 @@
 package com.smf.service.event;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.smf.dto.zone.ZoneAccessResult;
 import com.smf.model.Event;
 import com.smf.model.enums.EventTypes;
 import com.smf.repo.EventRepository;
-import com.smf.util.LogEvent;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class EventService implements IEventService {
 
   private final EventRepository eventRepo;
+  private final ObjectMapper objectMapper;
 
   @Override
   public List<Event> getEvents(int since) {
@@ -26,29 +29,47 @@ public class EventService implements IEventService {
     return eventRepo.findAll();
   }
 
-  // NOTE: Could add logic later if needed
   @Override
-  @LogEvent(eventType = EventTypes.TESTING)
-  public void handleTest(String macAddress) {}
+  public void handleTest(String macAddress) {
+    eventRepo.save(new Event(EventTypes.TESTING, macAddress, "{}"));
+  }
 
   @Override
-  @LogEvent(eventType = EventTypes.ACCESS_DENIED)
-  public void handleDenied(String macAddress) {}
+  public void handleDenied(String macAddress) {
+    eventRepo.save(new Event(EventTypes.ACCESS_DENIED, macAddress, "{}"));
+  }
 
   @Override
-  @LogEvent(eventType = EventTypes.DEVICE_ONLINE)
-  public void handleOnline(String macAddress) {}
+  public void handleOnline(String macAddress) {
+    eventRepo.save(new Event(EventTypes.DEVICE_ONLINE, macAddress, "{}"));
+  }
 
   @Override
-  @LogEvent(eventType = EventTypes.ACCESS_GRANTED)
-  public void handleGranted(String macAddress) {}
+  public void handleGranted(String macAddress) {
+    eventRepo.save(new Event(EventTypes.ACCESS_GRANTED, macAddress, "{}"));
+  }
 
   @Override
-  @LogEvent(eventType = EventTypes.SOS_TRIGGERED)
-  public void handleSos(String macAddress) {}
+  public void handleSos(String macAddress) {
+    eventRepo.save(new Event(EventTypes.SOS_TRIGGERED, macAddress, "{}"));
+  }
 
   @Override
-  @LogEvent(eventType = EventTypes.DEVICE_OFFLINE)
-  public void handleOffline(String macAddress) {}
+  public void handleOffline(String macAddress) {
+    eventRepo.save(new Event(EventTypes.DEVICE_OFFLINE, macAddress, "{}"));
+  }
+
+  @Override
+  public void logZoneAccessEvent(ZoneAccessResult result, String macAddress) {
+    ObjectNode metadata = objectMapper.createObjectNode();
+    metadata.put("zoneId", result.zoneId().toString());
+    metadata.put("zoneName", result.zoneName());
+    metadata.put("accessGranted", result.granted());
+    metadata.put("message", result.message());
+    metadata.set("userRoles", objectMapper.valueToTree(result.userRoles()));
+    metadata.set("zoneAllowedRoles", objectMapper.valueToTree(result.zoneAllowedRoles()));
+
+    EventTypes eventType = result.granted() ? EventTypes.ACCESS_GRANTED : EventTypes.ACCESS_DENIED;
+    eventRepo.save(new Event(eventType, macAddress, metadata.toString()));
+  }
 }
-

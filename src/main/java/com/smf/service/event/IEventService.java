@@ -1,5 +1,6 @@
 package com.smf.service.event;
 
+import com.smf.dto.zone.ZoneAccessResult;
 import com.smf.model.Event;
 import java.util.List;
 
@@ -19,5 +20,6 @@ public interface IEventService {
   void handleSos(String macAddress);
 
   void handleOffline(String macAddress);
-}
 
+  void logZoneAccessEvent(ZoneAccessResult result, String macAddress);
+}

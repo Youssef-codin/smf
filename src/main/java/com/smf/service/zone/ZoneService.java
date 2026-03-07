@@ -1,13 +1,16 @@
 package com.smf.service.zone;
 
+import com.smf.dto.zone.ZoneAccessResult;
+import com.smf.dto.zone.ZoneEntryRequest;
 import com.smf.dto.zone.ZoneRequest;
 import com.smf.dto.zone.ZoneResponse;
 import com.smf.model.Device;
 import com.smf.model.Role;
 import com.smf.model.Zone;
-import com.smf.repo.DeviceRepository;
-import com.smf.repo.RoleRepository;
 import com.smf.repo.ZoneRepository;
+import com.smf.service.device.IDeviceService;
+import com.smf.service.event.IEventService;
+import com.smf.service.role.IRoleService;
 import com.smf.util.AppError;
 import java.util.List;
 import java.util.Set;
@@ -25,8 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class ZoneService implements IZoneService {
 
   private final ZoneRepository zoneRepository;
-  private final RoleRepository roleRepository;
-  private final DeviceRepository deviceRepository;
+  private final IRoleService roleService;
+  private final IDeviceService deviceService;
+  private final IEventService eventService;
 
   @Override
   public ZoneResponse createZone(ZoneRequest request) {
@@ -99,10 +103,7 @@ public class ZoneService implements IZoneService {
 
   @Override
   public boolean canDeviceAccessZone(UUID deviceId, UUID zoneId) {
-    Device device =
-        deviceRepository
-            .findById(deviceId)
-            .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
+    Device device = deviceService.findDeviceById(deviceId);
 
     Zone zone =
         zoneRepository
@@ -129,10 +130,7 @@ public class ZoneService implements IZoneService {
 
   @Override
   public List<ZoneResponse> getAccessibleZones(UUID deviceId) {
-    Device device =
-        deviceRepository
-            .findById(deviceId)
-            .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
+    Device device = deviceService.findDeviceById(deviceId);
 
     Set<String> ownerRoleNames =
         device.getOwner().getRoles().stream().map(Role::getRoleName).collect(Collectors.toSet());
@@ -166,10 +164,7 @@ public class ZoneService implements IZoneService {
             .findById(zoneId)
             .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Zone not found"));
 
-    Role role =
-        roleRepository
-            .findById(roleId)
-            .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Role not found"));
+    Role role = roleService.findRoleById(roleId);
 
     zone.getAllowedRoles().add(role);
     zoneRepository.save(zone);
@@ -183,10 +178,7 @@ public class ZoneService implements IZoneService {
             .findById(zoneId)
             .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Zone not found"));
 
-    Role role =
-        roleRepository
-            .findById(roleId)
-            .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Role not found"));
+    Role role = roleService.findRoleById(roleId);
 
     zone.getAllowedRoles().remove(role);
     zoneRepository.save(zone);
@@ -197,5 +189,48 @@ public class ZoneService implements IZoneService {
     return zoneRepository
         .findById(zoneId)
         .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Zone not found"));
+  }
+
+  @Override
+  @Transactional
+  public ZoneAccessResult checkZoneAccess(String macAddress, ZoneEntryRequest request) {
+    Device device = deviceService.findDeviceByMacAddress(macAddress);
+
+    Zone zone =
+        zoneRepository
+            .findById(request.zoneId())
+            .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Zone not found"));
+
+    Set<String> userRoles =
+        device.getOwner().getRoles().stream().map(Role::getRoleName).collect(Collectors.toSet());
+
+    Set<String> zoneAllowedRoles =
+        zone.getAllowedRoles().stream().map(Role::getRoleName).collect(Collectors.toSet());
+
+    boolean canAccess;
+    if (zone.getAllowedRoles().isEmpty()) {
+      canAccess = true;
+    } else {
+      canAccess = false;
+      for (String role : userRoles) {
+        if (zoneAllowedRoles.contains(role)) {
+          canAccess = true;
+          break;
+        }
+      }
+    }
+
+    ZoneAccessResult result =
+        new ZoneAccessResult(
+            canAccess,
+            request.zoneId(),
+            zone.getName(),
+            userRoles,
+            zoneAllowedRoles,
+            canAccess ? "Access granted" : "Access denied - insufficient role permissions");
+
+    eventService.logZoneAccessEvent(result, macAddress);
+
+    return result;
   }
 }
