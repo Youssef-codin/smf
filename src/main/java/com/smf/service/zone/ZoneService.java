@@ -33,6 +33,7 @@ public class ZoneService implements IZoneService {
   private final IEventService eventService;
 
   @Override
+  @Transactional
   public ZoneResponse createZone(ZoneRequest request) {
     if (zoneRepository.findByName(request.name()).isPresent()) {
       throw new AppError(HttpStatus.CONFLICT, "Zone with this name already exists");
@@ -68,6 +69,7 @@ public class ZoneService implements IZoneService {
   }
 
   @Override
+  @Transactional
   public ZoneResponse updateZone(UUID id, ZoneRequest request) {
     Zone zone =
         zoneRepository
@@ -89,6 +91,7 @@ public class ZoneService implements IZoneService {
   }
 
   @Override
+  @Transactional
   public void deleteZone(UUID id) {
     Zone zone =
         zoneRepository

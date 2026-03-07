@@ -29,7 +29,6 @@ public class DeviceService implements IDeviceService {
   @Override
   @Transactional
   public DeviceResponse registerDevice(DeviceRegisterRequest request) {
-
     if (deviceRepository.findByMacAddress(request.getMacAddress()).isPresent()) {
       throw new AppError(HttpStatus.CONFLICT, "Device already registered");
     }
@@ -74,7 +73,6 @@ public class DeviceService implements IDeviceService {
   @Override
   @Transactional
   public DeviceResponse updateDevice(UUID deviceId, DeviceRegisterRequest request) {
-
     Device device =
         deviceRepository
             .findById(deviceId)
@@ -118,6 +116,8 @@ public class DeviceService implements IDeviceService {
     return mapToDeviceResponse(device);
   }
 
+  @Override
+  @Transactional
   public DeviceResponse handleOffline(String macAddress) {
     Device device =
         deviceRepository
