@@ -6,9 +6,10 @@ import com.smf.model.Device;
 import com.smf.model.Role;
 import com.smf.model.User;
 import com.smf.model.Zone;
-import com.smf.repo.DeviceRepository;
-import com.smf.repo.RoleRepository;
 import com.smf.repo.ZoneRepository;
+import com.smf.service.device.IDeviceService;
+import com.smf.service.event.IEventService;
+import com.smf.service.role.IRoleService;
 import com.smf.service.zone.ZoneService;
 import com.smf.util.AppError;
 
@@ -35,10 +36,13 @@ class ZoneServiceTest {
     private ZoneRepository zoneRepository;
 
     @Mock
-    private RoleRepository roleRepository;
+    private IRoleService roleService;
 
     @Mock
-    private DeviceRepository deviceRepository;
+    private IDeviceService deviceService;
+
+    @Mock
+    private IEventService eventService;
 
     @InjectMocks
     private ZoneService zoneService;
@@ -122,7 +126,7 @@ class ZoneServiceTest {
     @Test
     void engineerCanAccessRestrictedZone() {
 
-        when(deviceRepository.findById(engineerDevice.getId())).thenReturn(Optional.of(engineerDevice));
+        when(deviceService.findDeviceById(engineerDevice.getId())).thenReturn(engineerDevice);
         when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
         boolean canAccess = zoneService.canDeviceAccessZone(engineerDevice.getId(), restrictedZone.getId());
@@ -133,7 +137,7 @@ class ZoneServiceTest {
     @Test
     void workerCannotAccessRestrictedZone() {
 
-        when(deviceRepository.findById(workerDevice.getId())).thenReturn(Optional.of(workerDevice));
+        when(deviceService.findDeviceById(workerDevice.getId())).thenReturn(workerDevice);
         when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
         boolean canAccess = zoneService.canDeviceAccessZone(workerDevice.getId(), restrictedZone.getId());
@@ -144,7 +148,7 @@ class ZoneServiceTest {
     @Test
     void everyoneCanAccessOpenZone() {
 
-        when(deviceRepository.findById(engineerDevice.getId())).thenReturn(Optional.of(engineerDevice));
+        when(deviceService.findDeviceById(engineerDevice.getId())).thenReturn(engineerDevice);
         when(zoneRepository.findById(openZone.getId())).thenReturn(Optional.of(openZone));
 
         boolean canAccess = zoneService.canDeviceAccessZone(engineerDevice.getId(), openZone.getId());
@@ -155,7 +159,7 @@ class ZoneServiceTest {
     @Test
     void multiRoleUserShouldAccessIfOneRoleMatches() {
 
-        when(deviceRepository.findById(multiRoleDevice.getId())).thenReturn(Optional.of(multiRoleDevice));
+        when(deviceService.findDeviceById(multiRoleDevice.getId())).thenReturn(multiRoleDevice);
         when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
         boolean canAccess = zoneService.canDeviceAccessZone(multiRoleDevice.getId(), restrictedZone.getId());
@@ -166,7 +170,7 @@ class ZoneServiceTest {
     @Test
     void userWithNoRolesShouldBeDenied() {
 
-        when(deviceRepository.findById(noRoleDevice.getId())).thenReturn(Optional.of(noRoleDevice));
+        when(deviceService.findDeviceById(noRoleDevice.getId())).thenReturn(noRoleDevice);
         when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
         boolean canAccess = zoneService.canDeviceAccessZone(noRoleDevice.getId(), restrictedZone.getId());

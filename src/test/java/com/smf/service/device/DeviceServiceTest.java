@@ -1,12 +1,16 @@
 package com.smf.service.device;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.dto.device.DeviceResponse;
 import com.smf.model.Device;
 import com.smf.model.User;
 import com.smf.model.enums.DeviceStatus;
 import com.smf.repo.DeviceRepository;
-import com.smf.repo.UserRepository;
+import com.smf.service.user.IUserService;
 import com.smf.util.AppError;
 import java.sql.Timestamp;
 import java.util.Optional;
@@ -19,265 +23,231 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class DeviceServiceTest {
 
-    @Mock
-    private DeviceRepository deviceRepository;
+  @Mock private DeviceRepository deviceRepository;
 
-    @Mock
-    private UserRepository userRepository;
+  @Mock private IUserService userService;
 
-    @InjectMocks
-    private DeviceService deviceService;
+  @InjectMocks private DeviceService deviceService;
 
-    private UUID ownerId;
-    private User owner;
-    private DeviceRegisterRequest request;
+  private UUID ownerId;
+  private User owner;
+  private DeviceRegisterRequest request;
 
-    @BeforeEach
-    void setUp() {
-        ownerId = UUID.randomUUID();
+  @BeforeEach
+  void setUp() {
+    ownerId = UUID.randomUUID();
 
-        owner = new User();
-        owner.setId(ownerId);
-        owner.setEmail("owner@test.com");
+    owner = new User();
+    owner.setId(ownerId);
+    owner.setEmail("owner@test.com");
 
-        request = new DeviceRegisterRequest(
-                "AA:BB:CC:DD:EE:FF",
-                ownerId.toString(),
-                10.0,
-                20.0,
-                new Timestamp(System.currentTimeMillis()),
-                DeviceStatus.ONLINE
-        );
-    }
+    request =
+        new DeviceRegisterRequest(
+            "AA:BB:CC:DD:EE:FF",
+            ownerId.toString(),
+            10.0,
+            20.0,
+            new Timestamp(System.currentTimeMillis()),
+            DeviceStatus.ONLINE);
+  }
 
-    @Test
-    void registerDevice_success() {
+  @Test
+  void registerDevice_success() {
 
-        when(deviceRepository.findByMacAddress(request.getMacAddress()))
-                .thenReturn(Optional.empty());
+    when(deviceRepository.findByMacAddress(request.getMacAddress())).thenReturn(Optional.empty());
 
-        when(userRepository.findById(ownerId))
-                .thenReturn(Optional.of(owner));
+    when(userService.findUserById(ownerId)).thenReturn(owner);
 
-        when(deviceRepository.save(any()))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    when(deviceRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        DeviceResponse response = deviceService.registerDevice(request);
+    DeviceResponse response = deviceService.registerDevice(request);
 
-        assertEquals(request.getMacAddress(), response.macAddress());
-        assertEquals(ownerId, response.ownerId());
-    }
+    assertEquals(request.getMacAddress(), response.macAddress());
+    assertEquals(ownerId, response.ownerId());
+  }
 
-    @Test
-    void registerDevice_conflict() {
+  @Test
+  void registerDevice_conflict() {
 
-        when(deviceRepository.findByMacAddress(request.getMacAddress()))
-                .thenReturn(Optional.of(mock(Device.class)));
+    when(deviceRepository.findByMacAddress(request.getMacAddress()))
+        .thenReturn(Optional.of(mock(Device.class)));
 
-        AppError exception =
-                assertThrows(AppError.class,
-                        () -> deviceService.registerDevice(request));
+    AppError exception = assertThrows(AppError.class, () -> deviceService.registerDevice(request));
 
-        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
-    }
+    assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+  }
 
-    @Test
-    void getDeviceById_success() {
+  @Test
+  void getDeviceById_success() {
 
-        Device device = new Device(
-                request.getMacAddress(),
-                owner,
-                request.getLastLocationLat(),
-                request.getLastLocationLon(),
-                request.getLastSeenTimestamp()
-        );
+    Device device =
+        new Device(
+            request.getMacAddress(),
+            owner,
+            request.getLastLocationLat(),
+            request.getLastLocationLon(),
+            request.getLastSeenTimestamp());
 
-        UUID deviceId = UUID.randomUUID();
-        device.setId(deviceId);
+    UUID deviceId = UUID.randomUUID();
+    device.setId(deviceId);
 
-        when(deviceRepository.findById(deviceId))
-                .thenReturn(Optional.of(device));
+    when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
 
-        DeviceResponse response = deviceService.getDeviceById(deviceId);
+    DeviceResponse response = deviceService.getDeviceById(deviceId);
 
-        assertEquals(device.getMacAddress(), response.macAddress());
-        assertEquals(ownerId, response.ownerId());
-    }
+    assertEquals(device.getMacAddress(), response.macAddress());
+    assertEquals(ownerId, response.ownerId());
+  }
 
-    @Test
-    void getDeviceById_notFound() {
+  @Test
+  void getDeviceById_notFound() {
 
-        UUID deviceId = UUID.randomUUID();
+    UUID deviceId = UUID.randomUUID();
 
-        when(deviceRepository.findById(deviceId))
-                .thenReturn(Optional.empty());
+    when(deviceRepository.findById(deviceId)).thenReturn(Optional.empty());
 
-        AppError exception =
-                assertThrows(AppError.class,
-                        () -> deviceService.getDeviceById(deviceId));
+    AppError exception = assertThrows(AppError.class, () -> deviceService.getDeviceById(deviceId));
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
-        assertEquals("Device not found", exception.getMessage());
-    }
+    assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+    assertEquals("Device not found", exception.getMessage());
+  }
 
-    @Test
-    void updateDevice_success() {
+  @Test
+  void updateDevice_success() {
 
-        UUID deviceId = UUID.randomUUID();
+    UUID deviceId = UUID.randomUUID();
 
-        Device device = new Device(
-                request.getMacAddress(),
-                owner,
-                request.getLastLocationLat(),
-                request.getLastLocationLon(),
-                request.getLastSeenTimestamp()
-        );
+    Device device =
+        new Device(
+            request.getMacAddress(),
+            owner,
+            request.getLastLocationLat(),
+            request.getLastLocationLon(),
+            request.getLastSeenTimestamp());
 
-        when(deviceRepository.findById(deviceId))
-                .thenReturn(Optional.of(device));
+    when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
 
-        when(userRepository.findById(ownerId))
-                .thenReturn(Optional.of(owner));
+    when(userService.findUserById(ownerId)).thenReturn(owner);
 
-        when(deviceRepository.save(any()))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    when(deviceRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        DeviceResponse response = deviceService.updateDevice(deviceId, request);
+    DeviceResponse response = deviceService.updateDevice(deviceId, request);
 
-        assertEquals(request.getLastLocationLat(), response.lastLocationLat());
-        assertEquals(request.getStatus(), response.status());
-    }
+    assertEquals(request.getLastLocationLat(), response.lastLocationLat());
+    assertEquals(request.getStatus(), response.status());
+  }
 
-    @Test
-    void updateDevice_deviceNotFound() {
+  @Test
+  void updateDevice_deviceNotFound() {
 
-        UUID deviceId = UUID.randomUUID();
+    UUID deviceId = UUID.randomUUID();
 
-        when(deviceRepository.findById(deviceId))
-                .thenReturn(Optional.empty());
+    when(deviceRepository.findById(deviceId)).thenReturn(Optional.empty());
 
-        AppError exception =
-                assertThrows(AppError.class,
-                        () -> deviceService.updateDevice(deviceId, request));
+    AppError exception =
+        assertThrows(AppError.class, () -> deviceService.updateDevice(deviceId, request));
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
-        assertEquals("Device not found", exception.getMessage());
-    }
+    assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+    assertEquals("Device not found", exception.getMessage());
+  }
 
-    @Test
-    void updateDevice_ownerNotFound() {
+  @Test
+  void updateDevice_ownerNotFound() {
 
-        UUID deviceId = UUID.randomUUID();
+    UUID deviceId = UUID.randomUUID();
 
-        Device device = new Device(
-                request.getMacAddress(),
-                owner,
-                request.getLastLocationLat(),
-                request.getLastLocationLon(),
-                request.getLastSeenTimestamp()
-        );
+    Device device =
+        new Device(
+            request.getMacAddress(),
+            owner,
+            request.getLastLocationLat(),
+            request.getLastLocationLon(),
+            request.getLastSeenTimestamp());
 
-        when(deviceRepository.findById(deviceId))
-                .thenReturn(Optional.of(device));
+    when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
 
-        when(userRepository.findById(ownerId))
-                .thenReturn(Optional.empty());
+    when(userService.findUserById(ownerId)).thenThrow(new AppError(HttpStatus.NOT_FOUND, "Owner not found"));
 
-        AppError exception =
-                assertThrows(AppError.class,
-                        () -> deviceService.updateDevice(deviceId, request));
+    AppError exception =
+        assertThrows(AppError.class, () -> deviceService.updateDevice(deviceId, request));
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
-        assertEquals("Owner not found", exception.getMessage());
-    }
+    assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+    assertEquals("Owner not found", exception.getMessage());
+  }
 
-    @Test
-    void deleteDevice_success() {
+  @Test
+  void deleteDevice_success() {
 
-        UUID deviceId = UUID.randomUUID();
+    UUID deviceId = UUID.randomUUID();
 
-        Device device = new Device(
-                request.getMacAddress(),
-                owner,
-                request.getLastLocationLat(),
-                request.getLastLocationLon(),
-                request.getLastSeenTimestamp()
-        );
+    Device device =
+        new Device(
+            request.getMacAddress(),
+            owner,
+            request.getLastLocationLat(),
+            request.getLastLocationLon(),
+            request.getLastSeenTimestamp());
 
-        when(deviceRepository.findById(deviceId))
-                .thenReturn(Optional.of(device));
+    when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
 
-        assertDoesNotThrow(() -> deviceService.deleteDevice(deviceId));
+    assertDoesNotThrow(() -> deviceService.deleteDevice(deviceId));
 
-        verify(deviceRepository).delete(device);
-    }
+    verify(deviceRepository).delete(device);
+  }
 
-    @Test
-    void deleteDevice_notFound() {
+  @Test
+  void deleteDevice_notFound() {
 
-        UUID deviceId = UUID.randomUUID();
+    UUID deviceId = UUID.randomUUID();
 
-        when(deviceRepository.findById(deviceId))
-                .thenReturn(Optional.empty());
+    when(deviceRepository.findById(deviceId)).thenReturn(Optional.empty());
 
-        AppError exception =
-                assertThrows(AppError.class,
-                        () -> deviceService.deleteDevice(deviceId));
+    AppError exception = assertThrows(AppError.class, () -> deviceService.deleteDevice(deviceId));
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
-        assertEquals("Device not found", exception.getMessage());
-    }
+    assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+    assertEquals("Device not found", exception.getMessage());
+  }
 
-    @Test
-    void handleSos_updatesStatus() {
+  @Test
+  void handleSos_updatesStatus() {
 
-        Device device = new Device(
-                request.getMacAddress(),
-                owner,
-                request.getLastLocationLat(),
-                request.getLastLocationLon(),
-                request.getLastSeenTimestamp()
-        );
+    Device device =
+        new Device(
+            request.getMacAddress(),
+            owner,
+            request.getLastLocationLat(),
+            request.getLastLocationLon(),
+            request.getLastSeenTimestamp());
 
-        when(deviceRepository.findByMacAddress(device.getMacAddress()))
-                .thenReturn(Optional.of(device));
+    when(deviceRepository.findByMacAddress(device.getMacAddress())).thenReturn(Optional.of(device));
 
-        when(deviceRepository.save(any()))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    when(deviceRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        DeviceResponse response =
-                deviceService.handleSos(device.getMacAddress());
+    DeviceResponse response = deviceService.handleSos(device.getMacAddress());
 
-        assertEquals(DeviceStatus.SOS, response.status());
-    }
+    assertEquals(DeviceStatus.SOS, response.status());
+  }
 
-    @Test
-    void handleOffline_updatesStatus() {
+  @Test
+  void handleOffline_updatesStatus() {
 
-        Device device = new Device(
-                request.getMacAddress(),
-                owner,
-                request.getLastLocationLat(),
-                request.getLastLocationLon(),
-                request.getLastSeenTimestamp()
-        );
+    Device device =
+        new Device(
+            request.getMacAddress(),
+            owner,
+            request.getLastLocationLat(),
+            request.getLastLocationLon(),
+            request.getLastSeenTimestamp());
 
-        when(deviceRepository.findByMacAddress(device.getMacAddress()))
-                .thenReturn(Optional.of(device));
+    when(deviceRepository.findByMacAddress(device.getMacAddress())).thenReturn(Optional.of(device));
 
-        when(deviceRepository.save(any()))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    when(deviceRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        DeviceResponse response =
-                deviceService.handleOffline(device.getMacAddress());
+    DeviceResponse response = deviceService.handleOffline(device.getMacAddress());
 
-        assertEquals(DeviceStatus.OFFLINE, response.status());
-    }
+    assertEquals(DeviceStatus.OFFLINE, response.status());
+  }
 }

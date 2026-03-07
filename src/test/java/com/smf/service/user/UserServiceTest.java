@@ -4,8 +4,8 @@ import com.smf.dto.user.UserRequest;
 import com.smf.dto.user.UserResponse;
 import com.smf.model.Role;
 import com.smf.model.User;
-import com.smf.repo.RoleRepository;
 import com.smf.repo.UserRepository;
+import com.smf.service.role.IRoleService;
 import com.smf.util.AppError;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private RoleRepository roleRepository;
+    private IRoleService roleService;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -62,7 +62,7 @@ class UserServiceTest {
         request.setPassword("123456");
 
         when(passwordEncoder.encode("123456")).thenReturn("encoded");
-        when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(testRole));
+        when(roleService.findRoleByName("ROLE_USER")).thenReturn(testRole);
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         UserResponse response = userService.createUser(request);
