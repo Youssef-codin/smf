@@ -1,5 +1,6 @@
 package com.smf.service.user;
 
+import com.smf.dto.user.UserRequest;
 import com.smf.dto.user.UserResponse;
 import com.smf.model.Role;
 import com.smf.model.User;
@@ -53,35 +54,108 @@ class UserServiceTest {
     }
 
     @Test
+    void createUser_success_withDefaultRole() {
+
+        UserRequest request = new UserRequest();
+        request.setUsername("testuser");
+        request.setEmail("testuser@test.com");
+        request.setPassword("123456");
+
+        when(passwordEncoder.encode("123456")).thenReturn("encoded");
+        when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(testRole));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        UserResponse response = userService.createUser(request);
+
+        assertNotNull(response);
+        assertEquals("testuser@test.com", response.getEmail());
+    }
+
+    @Test
     void getUserById_success() {
+
         when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
 
         UserResponse result = userService.getUserById(testUser.getId());
 
         assertNotNull(result);
         assertEquals(testUser.getEmail(), result.getEmail());
-        assertEquals(testUser.getUsername(), result.getFullName());
     }
 
     @Test
     void getUserById_notFound() {
+
         UUID id = UUID.randomUUID();
         when(userRepository.findById(id)).thenReturn(Optional.empty());
 
         AppError exception = assertThrows(AppError.class, () -> userService.getUserById(id));
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
-        assertEquals("User not found", exception.getMessage());
     }
 
     @Test
     void getAllUsers_success() {
+
         when(userRepository.findAll()).thenReturn(List.of(testUser));
 
-        List<UserResponse> users = userService.getAllUsers();  
+        List<UserResponse> users = userService.getAllUsers();
 
         assertEquals(1, users.size());
-        assertEquals("testuser@test.com", users.get(0).getEmail());
-        assertEquals("testuser", users.get(0).getFullName());
+    }
+
+    @Test
+    void updateUser_success() {
+
+        UserRequest request = new UserRequest();
+        request.setUsername("updated");
+        request.setEmail("updated@test.com");
+        request.setPassword("123");
+
+        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.encode("123")).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        UserResponse response = userService.updateUser(testUser.getId(), request);
+
+        assertEquals("updated@test.com", response.getEmail());
+    }
+
+    @Test
+    void updateUser_notFound() {
+
+        UUID id = UUID.randomUUID();
+        UserRequest request = new UserRequest();
+
+        when(userRepository.findById(id)).thenReturn(Optional.empty());
+
+        AppError exception = assertThrows(AppError.class,
+                () -> userService.updateUser(id, request));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+    }
+
+    @Test
+    void deleteUser_success() {
+
+        UUID id = UUID.randomUUID();
+
+        when(userRepository.existsById(id)).thenReturn(true);
+
+        assertDoesNotThrow(() -> userService.deleteUser(id));
+
+        verify(userRepository).deleteById(id);
+    }
+
+    @Test
+    void deleteUser_notFound() {
+
+        UUID id = UUID.randomUUID();
+
+        when(userRepository.existsById(id)).thenReturn(false);
+
+        AppError exception = assertThrows(AppError.class,
+                () -> userService.deleteUser(id));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     }
 }

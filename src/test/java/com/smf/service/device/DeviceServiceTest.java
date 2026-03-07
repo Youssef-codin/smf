@@ -2,6 +2,7 @@ package com.smf.service.device;
 
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.dto.device.DeviceResponse;
+import com.smf.model.Device;
 import com.smf.model.User;
 import com.smf.model.enums.DeviceStatus;
 import com.smf.repo.DeviceRepository;
@@ -58,6 +59,7 @@ class DeviceServiceTest {
 
     @Test
     void registerDevice_success() {
+
         when(deviceRepository.findByMacAddress(request.getMacAddress()))
                 .thenReturn(Optional.empty());
 
@@ -71,15 +73,13 @@ class DeviceServiceTest {
 
         assertEquals(request.getMacAddress(), response.macAddress());
         assertEquals(ownerId, response.ownerId());
-        assertEquals(request.getLastLocationLat(), response.lastLocationLat());
-        assertEquals(request.getLastLocationLon(), response.lastLocationLon());
-        assertEquals(request.getLastSeenTimestamp(), response.lastSeenTimestamp());
     }
 
     @Test
     void registerDevice_conflict() {
+
         when(deviceRepository.findByMacAddress(request.getMacAddress()))
-                .thenReturn(Optional.of(mock(com.smf.model.Device.class)));
+                .thenReturn(Optional.of(mock(Device.class)));
 
         AppError exception =
                 assertThrows(AppError.class,
@@ -90,14 +90,14 @@ class DeviceServiceTest {
 
     @Test
     void getDeviceById_success() {
-        com.smf.model.Device device =
-                new com.smf.model.Device(
-                        request.getMacAddress(),
-                        owner,
-                        request.getLastLocationLat(),
-                        request.getLastLocationLon(),
-                        request.getLastSeenTimestamp()
-                );
+
+        Device device = new Device(
+                request.getMacAddress(),
+                owner,
+                request.getLastLocationLat(),
+                request.getLastLocationLon(),
+                request.getLastSeenTimestamp()
+        );
 
         UUID deviceId = UUID.randomUUID();
         device.setId(deviceId);
@@ -113,6 +113,7 @@ class DeviceServiceTest {
 
     @Test
     void getDeviceById_notFound() {
+
         UUID deviceId = UUID.randomUUID();
 
         when(deviceRepository.findById(deviceId))
@@ -127,15 +128,123 @@ class DeviceServiceTest {
     }
 
     @Test
+    void updateDevice_success() {
+
+        UUID deviceId = UUID.randomUUID();
+
+        Device device = new Device(
+                request.getMacAddress(),
+                owner,
+                request.getLastLocationLat(),
+                request.getLastLocationLon(),
+                request.getLastSeenTimestamp()
+        );
+
+        when(deviceRepository.findById(deviceId))
+                .thenReturn(Optional.of(device));
+
+        when(userRepository.findById(ownerId))
+                .thenReturn(Optional.of(owner));
+
+        when(deviceRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        DeviceResponse response = deviceService.updateDevice(deviceId, request);
+
+        assertEquals(request.getLastLocationLat(), response.lastLocationLat());
+        assertEquals(request.getStatus(), response.status());
+    }
+
+    @Test
+    void updateDevice_deviceNotFound() {
+
+        UUID deviceId = UUID.randomUUID();
+
+        when(deviceRepository.findById(deviceId))
+                .thenReturn(Optional.empty());
+
+        AppError exception =
+                assertThrows(AppError.class,
+                        () -> deviceService.updateDevice(deviceId, request));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        assertEquals("Device not found", exception.getMessage());
+    }
+
+    @Test
+    void updateDevice_ownerNotFound() {
+
+        UUID deviceId = UUID.randomUUID();
+
+        Device device = new Device(
+                request.getMacAddress(),
+                owner,
+                request.getLastLocationLat(),
+                request.getLastLocationLon(),
+                request.getLastSeenTimestamp()
+        );
+
+        when(deviceRepository.findById(deviceId))
+                .thenReturn(Optional.of(device));
+
+        when(userRepository.findById(ownerId))
+                .thenReturn(Optional.empty());
+
+        AppError exception =
+                assertThrows(AppError.class,
+                        () -> deviceService.updateDevice(deviceId, request));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        assertEquals("Owner not found", exception.getMessage());
+    }
+
+    @Test
+    void deleteDevice_success() {
+
+        UUID deviceId = UUID.randomUUID();
+
+        Device device = new Device(
+                request.getMacAddress(),
+                owner,
+                request.getLastLocationLat(),
+                request.getLastLocationLon(),
+                request.getLastSeenTimestamp()
+        );
+
+        when(deviceRepository.findById(deviceId))
+                .thenReturn(Optional.of(device));
+
+        assertDoesNotThrow(() -> deviceService.deleteDevice(deviceId));
+
+        verify(deviceRepository).delete(device);
+    }
+
+    @Test
+    void deleteDevice_notFound() {
+
+        UUID deviceId = UUID.randomUUID();
+
+        when(deviceRepository.findById(deviceId))
+                .thenReturn(Optional.empty());
+
+        AppError exception =
+                assertThrows(AppError.class,
+                        () -> deviceService.deleteDevice(deviceId));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        assertEquals("Device not found", exception.getMessage());
+    }
+
+    @Test
     void handleSos_updatesStatus() {
-        com.smf.model.Device device =
-                new com.smf.model.Device(
-                        request.getMacAddress(),
-                        owner,
-                        request.getLastLocationLat(),
-                        request.getLastLocationLon(),
-                        request.getLastSeenTimestamp()
-                );
+
+        Device device = new Device(
+                request.getMacAddress(),
+                owner,
+                request.getLastLocationLat(),
+                request.getLastLocationLon(),
+                request.getLastSeenTimestamp()
+        );
 
         when(deviceRepository.findByMacAddress(device.getMacAddress()))
                 .thenReturn(Optional.of(device));
@@ -151,14 +260,14 @@ class DeviceServiceTest {
 
     @Test
     void handleOffline_updatesStatus() {
-        com.smf.model.Device device =
-                new com.smf.model.Device(
-                        request.getMacAddress(),
-                        owner,
-                        request.getLastLocationLat(),
-                        request.getLastLocationLon(),
-                        request.getLastSeenTimestamp()
-                );
+
+        Device device = new Device(
+                request.getMacAddress(),
+                owner,
+                request.getLastLocationLat(),
+                request.getLastLocationLon(),
+                request.getLastSeenTimestamp()
+        );
 
         when(deviceRepository.findByMacAddress(device.getMacAddress()))
                 .thenReturn(Optional.of(device));

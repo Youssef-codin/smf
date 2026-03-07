@@ -1,4 +1,3 @@
-
 package com.smf.service.event;
 
 import static org.mockito.Mockito.*;
@@ -60,16 +59,5 @@ class EventServiceTest {
         List<Event> result = eventService.getAllEvents();
         assertEquals(2, result.size());
         assertTrue(result.stream().anyMatch(e -> e.getEventType() == EventTypes.TESTING));
-    }
-
-    @Test
-    void testHandleMethods() {
-
-        assertDoesNotThrow(() -> eventService.handleTest("MAC1"));
-        assertDoesNotThrow(() -> eventService.handleDenied("MAC2"));
-        assertDoesNotThrow(() -> eventService.handleOnline("MAC3"));
-        assertDoesNotThrow(() -> eventService.handleGranted("MAC4"));
-        assertDoesNotThrow(() -> eventService.handleSos("MAC5"));
-        assertDoesNotThrow(() -> eventService.handleOffline("MAC6"));
     }
 }

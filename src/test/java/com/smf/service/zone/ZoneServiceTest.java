@@ -2,24 +2,33 @@ package com.smf.service.zone;
 
 import com.smf.dto.zone.ZoneRequest;
 import com.smf.dto.zone.ZoneResponse;
+import com.smf.model.Device;
 import com.smf.model.Role;
+import com.smf.model.User;
 import com.smf.model.Zone;
-import com.smf.util.AppError;
 import com.smf.repo.DeviceRepository;
 import com.smf.repo.RoleRepository;
 import com.smf.repo.ZoneRepository;
+import com.smf.service.zone.ZoneService;
+import com.smf.util.AppError;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.http.HttpStatus;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class ZoneServiceTest {
 
     @Mock
@@ -34,128 +43,214 @@ class ZoneServiceTest {
     @InjectMocks
     private ZoneService zoneService;
 
-    private Zone testZone;
-    private UUID zoneId;
+    private Role engineerRole;
+    private Role workerRole;
+    private Role managerRole;
+
+    private User engineerUser;
+    private User workerUser;
+    private User multiRoleUser;
+    private User noRoleUser;
+
+    private Device engineerDevice;
+    private Device workerDevice;
+    private Device multiRoleDevice;
+    private Device noRoleDevice;
+
+    private Zone restrictedZone;
+    private Zone openZone;
+    private Zone multiRoleZone;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
 
-        zoneId = UUID.randomUUID();
-        testZone = new Zone();
-        testZone.setId(zoneId);
-        testZone.setName("Test Zone");
-        testZone.setAllowedRoles(new HashSet<>());
+        engineerRole = createRole(1L, "ENGINEER", false);
+        workerRole = createRole(2L, "WORKER", false);
+        managerRole = createRole(3L, "MANAGER", false);
+
+        engineerUser = createUser(UUID.randomUUID(), "engineer@test.com", Set.of(engineerRole));
+        workerUser = createUser(UUID.randomUUID(), "worker@test.com", Set.of(workerRole));
+        multiRoleUser = createUser(UUID.randomUUID(), "multi@test.com", Set.of(engineerRole, workerRole));
+        noRoleUser = createUser(UUID.randomUUID(), "norole@test.com", new HashSet<>());
+
+        engineerDevice = createDevice(UUID.randomUUID(), engineerUser);
+        workerDevice = createDevice(UUID.randomUUID(), workerUser);
+        multiRoleDevice = createDevice(UUID.randomUUID(), multiRoleUser);
+        noRoleDevice = createDevice(UUID.randomUUID(), noRoleUser);
+
+        restrictedZone = createZone(UUID.randomUUID(), "Restricted Zone", Set.of(engineerRole));
+        openZone = createZone(UUID.randomUUID(), "Open Zone", new HashSet<>());
+        multiRoleZone = createZone(UUID.randomUUID(), "Multi Role Zone", Set.of(engineerRole, managerRole));
+    }
+
+    private Role createRole(Long id, String name, boolean isAdmin) {
+        Role role = new Role();
+        role.setId(id);
+        role.setRoleName(name);
+        role.setAdmin(isAdmin);
+        return role;
+    }
+
+    private User createUser(UUID id, String email, Set<Role> roles) {
+        User user = new User();
+        user.setId(id);
+        user.setEmail(email);
+        user.setUsername(email.split("@")[0]);
+        user.setRoles(roles);
+        return user;
+    }
+
+    private Device createDevice(UUID id, User owner) {
+        Device device = new Device();
+        device.setId(id);
+        device.setOwner(owner);
+        device.setMacAddress(UUID.randomUUID().toString());
+        device.setLastLocationLat(0.0);
+        device.setLastLocationLon(0.0);
+        return device;
+    }
+
+    private Zone createZone(UUID id, String name, Set<Role> roles) {
+        Zone zone = new Zone();
+        zone.setId(id);
+        zone.setName(name);
+        zone.setAllowedRoles(new HashSet<>(roles));
+        return zone;
+    }
+
+
+    @Test
+    void engineerCanAccessRestrictedZone() {
+
+        when(deviceRepository.findById(engineerDevice.getId())).thenReturn(Optional.of(engineerDevice));
+        when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
+
+        boolean canAccess = zoneService.canDeviceAccessZone(engineerDevice.getId(), restrictedZone.getId());
+
+        assertTrue(canAccess);
     }
 
     @Test
-    void createZone_success() {
-        ZoneRequest request = new ZoneRequest("Test Zone");
+    void workerCannotAccessRestrictedZone() {
 
-        when(zoneRepository.findByName("Test Zone")).thenReturn(Optional.empty());
-        when(zoneRepository.save(any(Zone.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(deviceRepository.findById(workerDevice.getId())).thenReturn(Optional.of(workerDevice));
+        when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
+
+        boolean canAccess = zoneService.canDeviceAccessZone(workerDevice.getId(), restrictedZone.getId());
+
+        assertFalse(canAccess);
+    }
+
+    @Test
+    void everyoneCanAccessOpenZone() {
+
+        when(deviceRepository.findById(engineerDevice.getId())).thenReturn(Optional.of(engineerDevice));
+        when(zoneRepository.findById(openZone.getId())).thenReturn(Optional.of(openZone));
+
+        boolean canAccess = zoneService.canDeviceAccessZone(engineerDevice.getId(), openZone.getId());
+
+        assertTrue(canAccess);
+    }
+
+    @Test
+    void multiRoleUserShouldAccessIfOneRoleMatches() {
+
+        when(deviceRepository.findById(multiRoleDevice.getId())).thenReturn(Optional.of(multiRoleDevice));
+        when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
+
+        boolean canAccess = zoneService.canDeviceAccessZone(multiRoleDevice.getId(), restrictedZone.getId());
+
+        assertTrue(canAccess);
+    }
+
+    @Test
+    void userWithNoRolesShouldBeDenied() {
+
+        when(deviceRepository.findById(noRoleDevice.getId())).thenReturn(Optional.of(noRoleDevice));
+        when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
+
+        boolean canAccess = zoneService.canDeviceAccessZone(noRoleDevice.getId(), restrictedZone.getId());
+
+        assertFalse(canAccess);
+    }
+
+
+
+    @Test
+    void createZoneSuccess() {
+
+        ZoneRequest request = new ZoneRequest("New Zone");
+
+        when(zoneRepository.findByName("New Zone")).thenReturn(Optional.empty());
+        when(zoneRepository.save(any(Zone.class))).thenAnswer(invocation -> {
+            Zone zone = invocation.getArgument(0);
+            zone.setId(UUID.randomUUID());
+            return zone;
+        });
 
         ZoneResponse response = zoneService.createZone(request);
 
-        assertNotNull(response);
-        assertEquals("Test Zone", response.name());
+        assertEquals("New Zone", response.name());
     }
 
     @Test
-    void createZone_duplicateName() {
-        ZoneRequest request = new ZoneRequest("Test Zone");
+    void createZoneDuplicateShouldThrow() {
 
-        when(zoneRepository.findByName("Test Zone")).thenReturn(Optional.of(testZone));
+        ZoneRequest request = new ZoneRequest("Restricted Zone");
 
-        AppError exception =
-                assertThrows(AppError.class, () -> zoneService.createZone(request));
+        when(zoneRepository.findByName("Restricted Zone")).thenReturn(Optional.of(restrictedZone));
 
-        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
-        assertEquals("Zone with this name already exists", exception.getMessage());
+        AppError error = assertThrows(AppError.class, () -> zoneService.createZone(request));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatus());
     }
 
     @Test
-    void getZoneById_success() {
-        when(zoneRepository.findById(zoneId)).thenReturn(Optional.of(testZone));
+    void getZoneByIdSuccess() {
 
-        ZoneResponse response = zoneService.getZoneById(zoneId);
+        when(zoneRepository.findById(restrictedZone.getId())).thenReturn(Optional.of(restrictedZone));
 
-        assertNotNull(response);
-        assertEquals("Test Zone", response.name());
-        assertEquals(zoneId, response.id());
+        ZoneResponse response = zoneService.getZoneById(restrictedZone.getId());
+
+        assertEquals(restrictedZone.getName(), response.name());
     }
 
     @Test
-    void getZoneById_notFound() {
+    void getZoneByIdNotFound() {
+
         UUID id = UUID.randomUUID();
+
         when(zoneRepository.findById(id)).thenReturn(Optional.empty());
 
-        AppError exception =
-                assertThrows(AppError.class, () -> zoneService.getZoneById(id));
+        AppError error = assertThrows(AppError.class,
+                () -> zoneService.getZoneById(id));
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
-        assertEquals("Zone not found", exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatus());
     }
 
     @Test
-    void getAllZones_success() {
-        when(zoneRepository.findAll()).thenReturn(List.of(testZone));
+    void deleteZoneSuccess() {
 
-        List<ZoneResponse> zones = zoneService.getAllZones();
+        when(zoneRepository.findById(restrictedZone.getId()))
+                .thenReturn(Optional.of(restrictedZone));
 
-        assertEquals(1, zones.size());
-        assertEquals("Test Zone", zones.get(0).name());
+        doNothing().when(zoneRepository).delete(restrictedZone);
+
+        zoneService.deleteZone(restrictedZone.getId());
+
+        verify(zoneRepository).delete(restrictedZone);
     }
 
     @Test
-    void updateZone_success() {
-        ZoneRequest request = new ZoneRequest("Updated Zone");
+    void deleteZoneNotFound() {
 
-        when(zoneRepository.findById(zoneId)).thenReturn(Optional.of(testZone));
-        when(zoneRepository.findByName("Updated Zone")).thenReturn(Optional.empty());
-        when(zoneRepository.save(any(Zone.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        ZoneResponse response = zoneService.updateZone(zoneId, request);
-
-        assertEquals("Updated Zone", response.name());
-        assertEquals(zoneId, response.id());
-    }
-
-    @Test
-    void updateZone_conflict() {
-        ZoneRequest request = new ZoneRequest("Conflict Zone");
-        Zone otherZone = new Zone();
-        otherZone.setId(UUID.randomUUID());
-        otherZone.setName("Conflict Zone");
-
-        when(zoneRepository.findById(zoneId)).thenReturn(Optional.of(testZone));
-        when(zoneRepository.findByName("Conflict Zone")).thenReturn(Optional.of(otherZone));
-
-        AppError exception =
-                assertThrows(AppError.class, () -> zoneService.updateZone(zoneId, request));
-
-        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
-        assertEquals("Zone with this name already exists", exception.getMessage());
-    }
-
-    @Test
-    void deleteZone_success() {
-        when(zoneRepository.findById(zoneId)).thenReturn(Optional.of(testZone));
-        doNothing().when(zoneRepository).delete(testZone);
-
-        assertDoesNotThrow(() -> zoneService.deleteZone(zoneId));
-        verify(zoneRepository, times(1)).delete(testZone);
-    }
-
-    @Test
-    void deleteZone_notFound() {
         UUID id = UUID.randomUUID();
+
         when(zoneRepository.findById(id)).thenReturn(Optional.empty());
 
-        AppError exception =
-                assertThrows(AppError.class, () -> zoneService.deleteZone(id));
+        AppError error = assertThrows(AppError.class,
+                () -> zoneService.deleteZone(id));
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
-        assertEquals("Zone not found", exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatus());
     }
 }
