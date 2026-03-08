@@ -28,18 +28,14 @@ public class UserService implements IUserService {
   @Override
   @Transactional
   public UserResponse createUser(UserRequest request) {
-
     User user =
         new User(
             request.getEmail(),
             request.getUsername(),
             passwordEncoder.encode(request.getPassword()));
 
-    //  ROLE LOGIC HERE
     Set<Role> roles = new HashSet<>();
-
     if (request.getRoles() == null || request.getRoles().isEmpty()) {
-      // default role
       Role userRole = roleService.findRoleByName("ROLE_USER");
       roles.add(userRole);
     } else {
@@ -48,7 +44,6 @@ public class UserService implements IUserService {
         roles.add(role);
       }
     }
-
     user.setRoles(roles);
 
     user = userRepository.save(user);
@@ -72,7 +67,6 @@ public class UserService implements IUserService {
   @Override
   @Transactional
   public UserResponse updateUser(UUID userId, UserRequest request) {
-
     User user =
         userRepository
             .findById(userId)
