@@ -7,7 +7,12 @@ info:
     
     ## Authentication
     Most endpoints require authentication via JWT token passed in the Authorization header.
-    Device endpoints require device authentication headers.
+    Device endpoints require device authentication headers (X-Device-Mac, X-Device-Timestamp, X-Device-Signature).
+    
+    ## SMF Device Registry
+    Factory devices are pre-registered in the SMF device registry with MAC addresses and secrets.
+    Users register devices by selecting from available SMF device labels. Devices authenticate
+    using HMAC-SHA256 signatures computed from their device ID and timestamp.
     
     ## Base URL
     http://localhost:8080
@@ -92,7 +97,7 @@ components:
         smfDeviceLabel:
           type: string
           minLength: 1
-          description: Human-readable label for the device
+          description: Human-readable label for the device (matches SmfDevice label)
         ownerId:
           type: string
           minLength: 1
@@ -110,6 +115,45 @@ components:
         - lastLocationLon
         - ownerId
         - smfDeviceLabel
+    SmfDeviceRequest:
+      type: object
+      properties:
+        macAddress:
+          type: string
+          minLength: 1
+          description: MAC address of the SMF device (e.g., "00:1A:2B:3C:4D:5E")
+        label:
+          type: string
+          minLength: 1
+          description: Human-readable label for the device (used when registering)
+        secret:
+          type: string
+          minLength: 1
+          description: Secret key for HMAC authentication (will be encrypted)
+      required:
+        - macAddress
+        - label
+        - secret
+    SmfDeviceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID of the SMF device
+        macAddress:
+          type: string
+          description: MAC address of the device
+        label:
+          type: string
+          description: Human-readable label
+        isRegistered:
+          type: boolean
+          description: Whether the device has been registered to a user
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the device was added to the registry
     DeviceEventRequest:
       type: object
       properties:
@@ -911,3 +955,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+  /api/v1/smfdevices/:
+    post:
+      tags:
+        - smf-device-controller
+      operationId: addSmfDevice
+      summary: Add device to registry
+      description: |
+        Adds a new SMF device to the factory registry.
+        Only available in dev mode (app.is-dev-mode=true).
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SmfDeviceRequest"
+            examples:
+              SmfDeviceCreateExample:
+                summary: Example SMF device creation
+                value:
+                  macAddress: "00:1A:2B:3C:4D:5E"
+                  label: "Device-001"
+                  secret: "my-secret-key-123"
+        required: true
+      responses:
+        "201":
+          description: Device added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "409":
+          description: Device with this MAC already exists
+  /api/v1/smfdevices/{id}:
+    delete:
+      tags:
+        - smf-device-controller
+      operationId: removeSmfDevice
+      summary: Remove device from registry
+      description: |
+        Removes an SMF device from the factory registry.
+        Only available in dev mode (app.is-dev-mode=true).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the SMF device to remove
+      responses:
+        "204":
+          description: Device removed successfully
