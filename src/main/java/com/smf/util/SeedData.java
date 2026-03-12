@@ -55,9 +55,9 @@ public class SeedData implements CommandLineRunner {
         User adminUser = seedAdminUser(adminRole);
 
         // Seed test users with different roles
-        User engineerUser = seedTestUser("engineer", "engineer@test.com", "password123", new HashSet<>(Set.of(engineerRole)));
-        User managerUser = seedTestUser("manager", "manager@test.com", "password123", new HashSet<>(Set.of(managerRole)));
-        User workerUser = seedTestUser("worker", "worker@test.com", "password123", new HashSet<>(Set.of(workerRole)));
+        User engineerUser = seedTestUser("engineer", "engineer@test.com", "password", new HashSet<>(Set.of(engineerRole)));
+        User managerUser = seedTestUser("manager", "manager@test.com", "password", new HashSet<>(Set.of(managerRole)));
+        User workerUser = seedTestUser("worker", "worker@test.com", "password", new HashSet<>(Set.of(workerRole)));
 
         // Seed zones with role restrictions
         Zone zoneA = seedZone("Zone A - Engineering Only", new HashSet<>(Set.of(engineerRole)));
@@ -85,7 +85,7 @@ public class SeedData implements CommandLineRunner {
     private User seedAdminUser(Role adminRole) {
         if (!userRepository.existsByEmail("admin@smf.com")) {
             System.out.println("Seeding admin user...");
-            RegisterRequest request = new RegisterRequest("admin@smf.com", "admin", "admin");
+            RegisterRequest request = new RegisterRequest("admin@smf.com", "admin", "password");
             User user = authService.register(request);
             Set<Role> roles = new HashSet<>(Set.of(adminRole));
             user.setRoles(roles);

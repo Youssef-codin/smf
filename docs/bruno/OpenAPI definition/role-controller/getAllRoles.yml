@@ -1,0 +1,39 @@
+info:
+  name: getAllRoles
+  type: http
+  seq: 4
+  tags:
+    - role-controller
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/roles/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: OK
+    request:
+      url: "{{baseUrl}}/api/v1/roles/"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: "*/*"
+      body:
+        type: text
+        data: |-
+          {
+            "success": false,
+            "message": "",
+            "data": "",
+            "time": ""
+          }

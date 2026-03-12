@@ -1,0 +1,7 @@
+info:
+  name: role-controller
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

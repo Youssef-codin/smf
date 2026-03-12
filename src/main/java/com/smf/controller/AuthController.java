@@ -9,8 +9,6 @@ import com.smf.service.auth.IAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,23 +30,5 @@ public class AuthController {
   public ResponseEntity<ApiResponse> addUser(@Valid @RequestBody RegisterRequest req) {
     User user = authService.register(req);
     return ResponseEntity.ok(new ApiResponse(true, "User added successfully", user));
-  }
-
-  @PreAuthorize("hasAuthority('USER')")
-  @GetMapping("/isUser")
-  public ResponseEntity<ApiResponse> testUser() {
-    return ResponseEntity.ok(new ApiResponse(true, "You are an Authenticated user", null));
-  }
-
-  @PreAuthorize("hasAuthority('ADMIN')")
-  @GetMapping("/isAdmin")
-  public ResponseEntity<ApiResponse> testAdmin() {
-    return ResponseEntity.ok(new ApiResponse(true, "You are an Authenticated user", null));
-  }
-
-  @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
-  @GetMapping("/isAuthenticated")
-  public ResponseEntity<ApiResponse> testAuth() {
-    return ResponseEntity.ok(new ApiResponse(true, "You are an Authenticated user or admin", null));
   }
 }

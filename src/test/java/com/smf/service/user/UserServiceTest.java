@@ -41,12 +41,13 @@ class UserServiceTest {
         UserRequest request = new UserRequest();
         request.setUsername("youssef");
         request.setEmail("test@mail.com");
-        request.setPassword("123456");
+        request.setPassword("password");
         request.setRoles(Collections.emptySet());
 
         Role role = new Role("ROLE_USER");
 
-        when(passwordEncoder.encode("123456")).thenReturn("encoded");
+        when(userRepository.findByEmail("test@mail.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
         when(roleService.findRoleByName("ROLE_USER")).thenReturn(role);
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -62,18 +63,36 @@ class UserServiceTest {
         UserRequest request = new UserRequest();
         request.setUsername("admin");
         request.setEmail("admin@mail.com");
-        request.setPassword("123456");
+        request.setPassword("password");
         request.setRoles(Set.of("ROLE_ADMIN"));
 
         Role role = new Role("ROLE_ADMIN");
 
-        when(passwordEncoder.encode("123456")).thenReturn("encoded");
+        when(userRepository.findByEmail("admin@mail.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
         when(roleService.findRoleByName("ROLE_ADMIN")).thenReturn(role);
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         UserResponse response = userService.createUser(request);
 
         assertEquals("admin", response.getFullName());
+    }
+
+    @Test
+    void createUser_duplicateEmailShouldThrow() {
+
+        UserRequest request = new UserRequest();
+        request.setUsername("newuser");
+        request.setEmail("existing@mail.com");
+        request.setPassword("password");
+        request.setRoles(Collections.emptySet());
+
+        User existingUser = new User("existing@mail.com", "existing", "pass");
+
+        when(userRepository.findByEmail("existing@mail.com")).thenReturn(Optional.of(existingUser));
+
+        AppError error = assertThrows(AppError.class, () -> userService.createUser(request));
+        assertEquals(HttpStatus.CONFLICT, error.getStatus());
     }
 
     @Test
@@ -120,13 +139,13 @@ class UserServiceTest {
         UserRequest request = new UserRequest();
         request.setUsername("new");
         request.setEmail("new@mail.com");
-        request.setPassword("123");
+        request.setPassword("password");
 
         User user = new User("old@mail.com","old","pass");
         user.setId(id);
 
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
-        when(passwordEncoder.encode("123")).thenReturn("encoded");
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
         when(userRepository.save(any(User.class))).thenReturn(user);
 
         UserResponse response = userService.updateUser(id, request);
@@ -154,5 +173,28 @@ class UserServiceTest {
 
         AppError error = assertThrows(AppError.class, () -> userService.deleteUser(id));
         assertEquals(HttpStatus.NOT_FOUND, error.getStatus());
+    }
+
+    @Test
+    void updateUser_duplicateEmailShouldThrow() {
+
+        UUID id = UUID.randomUUID();
+        UUID anotherUserId = UUID.randomUUID();
+        User existingUser = new User("old@mail.com","old","pass");
+        existingUser.setId(id);
+
+        User anotherUser = new User("existing@mail.com", "other", "pass");
+        anotherUser.setId(anotherUserId);
+
+        UserRequest request = new UserRequest();
+        request.setUsername("new");
+        request.setEmail("existing@mail.com");
+        request.setPassword("password");
+
+        when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail("existing@mail.com")).thenReturn(Optional.of(anotherUser));
+
+        AppError error = assertThrows(AppError.class, () -> userService.updateUser(id, request));
+        assertEquals(HttpStatus.CONFLICT, error.getStatus());
     }
 }

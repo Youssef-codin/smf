@@ -9,6 +9,7 @@ import com.smf.service.role.IRoleService;
 import com.smf.util.AppError;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,10 @@ public class UserService implements IUserService {
   @Override
   @Transactional
   public UserResponse createUser(UserRequest request) {
+    if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+      throw new AppError(HttpStatus.CONFLICT, "Email already in use");
+    }
+
     User user =
         new User(
             request.getEmail(),
@@ -72,6 +77,11 @@ public class UserService implements IUserService {
             .findById(userId)
             .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "User not found"));
 
+    Optional<User> existingWithEmail = userRepository.findByEmail(request.getEmail());
+    if (existingWithEmail.isPresent() && !existingWithEmail.get().getId().equals(userId)) {
+      throw new AppError(HttpStatus.CONFLICT, "Email already in use");
+    }
+
     user.setUsername(request.getUsername());
     user.setEmail(request.getEmail());
     user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -100,3 +110,4 @@ public class UserService implements IUserService {
     return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
   }
 }
+
