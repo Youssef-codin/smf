@@ -13,6 +13,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -64,13 +65,15 @@ public class DeviceController {
     return ResponseEntity.ok(new ApiResponse(true, "Device deleted successfully", null));
   }
 
-  @PostMapping("/{macAddress}/zone-entry")
+  @PreAuthorize("hasAuthority('DEVICE')")
+  @PostMapping("/zone-entry")
   public ResponseEntity<ApiResponse> handleZoneEntry(
-      @PathVariable String macAddress, @Valid @RequestBody ZoneEntryRequest request) {
+      @AuthenticationPrincipal String macAddress, @Valid @RequestBody ZoneEntryRequest request) {
 
     ZoneAccessResult result = zoneService.checkZoneAccess(macAddress, request);
 
     return ResponseEntity.ok(
-        new ApiResponse(result.granted(), result.granted() ? "Access granted" : "Access denied", result));
+        new ApiResponse(
+            result.granted(), result.granted() ? "Access granted" : "Access denied", result));
   }
 }

@@ -25,6 +25,7 @@ public class SecurityConfig {
 	private final AppUserDetailsService service;
 	private final AuthEntryPointJwt entryPoint;
 	private final AuthTokenFilter authTokenFilter;
+	private final DeviceVerificationFilter deviceVerificationFilter;
 
 	private static final List<String> SECURE_URLS = List.of(
 	// "/api/v1/auth/**",
@@ -32,10 +33,12 @@ public class SecurityConfig {
 	// "/api-docs"
 	);
 
-	public SecurityConfig(AppUserDetailsService s, AuthEntryPointJwt e, AuthTokenFilter f) {
+	public SecurityConfig(AppUserDetailsService s, AuthEntryPointJwt e, AuthTokenFilter f,
+			DeviceVerificationFilter dvf) {
 		service = s;
 		entryPoint = e;
 		authTokenFilter = f;
+		deviceVerificationFilter = dvf;
 	}
 
 	@Bean
@@ -67,6 +70,7 @@ public class SecurityConfig {
 						auth -> auth.requestMatchers(SECURE_URLS.toArray(String[]::new)).authenticated()
 								.anyRequest().permitAll());
 		http.authenticationProvider(daoAuthenticationProvider());
+		http.addFilterBefore(deviceVerificationFilter, UsernamePasswordAuthenticationFilter.class);
 		http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();

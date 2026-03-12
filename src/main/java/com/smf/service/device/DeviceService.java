@@ -2,53 +2,60 @@ package com.smf.service.device;
 
 import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.dto.device.DeviceResponse;
+import com.smf.dto.device.SmfDeviceResponse;
 import com.smf.model.Device;
 import com.smf.model.User;
 import com.smf.model.enums.DeviceStatus;
 import com.smf.repo.DeviceRepository;
+import com.smf.service.registereddevice.IRegisteredDeviceService;
+import com.smf.service.smfdevice.ISmfDeviceService;
 import com.smf.service.user.IUserService;
 import com.smf.util.AppError;
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class DeviceService implements IDeviceService {
 
   private final DeviceRepository deviceRepository;
+  private final ISmfDeviceService smfDeviceService;
+  private final IRegisteredDeviceService registeredDeviceService;
   private final IUserService userService;
+
+  public DeviceService(
+      DeviceRepository deviceRepository,
+      ISmfDeviceService smfDeviceService,
+      @Lazy IRegisteredDeviceService registeredDeviceService,
+      IUserService userService) {
+    this.deviceRepository = deviceRepository;
+    this.smfDeviceService = smfDeviceService;
+    this.registeredDeviceService = registeredDeviceService;
+    this.userService = userService;
+  }
 
   @Override
   @Transactional
   public DeviceResponse registerDevice(DeviceRegisterRequest request) {
-    if (deviceRepository.findByMacAddress(request.getMacAddress()).isPresent()) {
+    SmfDeviceResponse smfDevice = smfDeviceService.getByLabel(request.smfDeviceLabel());
+
+    if (smfDevice.isRegistered()) {
       throw new AppError(HttpStatus.CONFLICT, "Device already registered");
     }
 
-    Timestamp now = new Timestamp(System.currentTimeMillis());
-    if (request.getLastSeenTimestamp().after(now)) {
-      throw new AppError(HttpStatus.BAD_REQUEST, "last_seen_timestamp cannot be in the future");
-    }
+    User owner = userService.findUserById(UUID.fromString(request.ownerId()));
 
-    User owner = userService.findUserById(UUID.fromString(request.getOwnerId()));
-
-    Device device =
-        new Device(
-            request.getMacAddress(),
-            owner,
-            request.getLastLocationLat(),
-            request.getLastLocationLon(),
-            request.getLastSeenTimestamp());
+    Device device = new Device(owner, request.lastLocationLat(), request.lastLocationLon());
 
     device = deviceRepository.save(device);
+
+    registeredDeviceService.registerDevice(smfDevice.id(), device.getId());
 
     return mapToDeviceResponse(device);
   }
@@ -78,13 +85,11 @@ public class DeviceService implements IDeviceService {
             .findById(deviceId)
             .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
 
-    User owner = userService.findUserById(UUID.fromString(request.getOwnerId()));
+    User owner = userService.findUserById(UUID.fromString(request.ownerId()));
 
     device.setOwner(owner);
-    device.setLastLocationLat(request.getLastLocationLat());
-    device.setLastLocationLon(request.getLastLocationLon());
-    device.setLastSeenTimestamp(request.getLastSeenTimestamp());
-    device.setStatus(request.getStatus());
+    device.setLastLocationLat(request.lastLocationLat());
+    device.setLastLocationLon(request.lastLocationLon());
 
     device = deviceRepository.save(device);
 

@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.sql.Timestamp;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,6 +23,7 @@ import org.hibernate.annotations.NaturalId;
 @Table(name = "devices")
 @Getter
 @Setter
+@AllArgsConstructor
 @NoArgsConstructor
 public class Device {
   @Id
@@ -42,23 +44,16 @@ public class Device {
   @Column(name = "last_location_lon")
   private Double lastLocationLon;
 
-  @Column(name = "last_seen_timestamp")
+  @Column(name = "last_seen_timestamp", nullable = true)
   private Timestamp lastSeenTimestamp;
 
   @Enumerated(EnumType.STRING)
   private DeviceStatus status;
 
-  public Device(
-      String macAddress,
-      User owner,
-      Double lastLocationLat,
-      Double lastLocationLon,
-      Timestamp lastSeenTimestamp) {
-    this.macAddress = macAddress;
+  public Device(User owner, Double lastLocationLat, Double lastLocationLon) {
     this.owner = owner;
     this.lastLocationLat = lastLocationLat;
     this.lastLocationLon = lastLocationLon;
-    this.lastSeenTimestamp = lastSeenTimestamp;
     this.status = DeviceStatus.OFFLINE;
   }
 }

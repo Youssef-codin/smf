@@ -1,4 +1,6 @@
-package com.smf;
+package com.smf.service.zone;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,15 +21,15 @@ import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
@@ -64,8 +66,10 @@ class ZoneAccessIntegrationTest {
     workerRole = createRole("WORKER", false);
 
     // Use different emails to avoid conflicts with SeedData
-    engineerUser = createUser("test-engineer@test.com", "test-engineer", new HashSet<>(Set.of(engineerRole)));
-    workerUser = createUser("test-worker@test.com", "test-worker", new HashSet<>(Set.of(workerRole)));
+    engineerUser =
+        createUser("test-engineer@test.com", "test-engineer", new HashSet<>(Set.of(engineerRole)));
+    workerUser =
+        createUser("test-worker@test.com", "test-worker", new HashSet<>(Set.of(workerRole)));
 
     engineerDevice = createDevice("TEST:AA:BB:CC:01", engineerUser);
     workerDevice = createDevice("TEST:AA:BB:CC:02", workerUser);
@@ -87,7 +91,7 @@ class ZoneAccessIntegrationTest {
     User user = new User();
     user.setEmail(email);
     user.setUsername(username);
-    user.setPassword(passwordEncoder.encode("password123"));
+    user.setPassword(passwordEncoder.encode("password"));
     user.setRoles(roles);
     return userRepository.save(user);
   }
@@ -109,8 +113,15 @@ class ZoneAccessIntegrationTest {
     return zoneRepository.save(zone);
   }
 
+  private void setDeviceAuthentication(String macAddress) {
+    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+        macAddress, null, List.of(new SimpleGrantedAuthority("DEVICE")));
+    SecurityContextHolder.getContext().setAuthentication(auth);
+  }
+
   @Test
   void zoneEntryWithAccess_shouldLogAccessGrantedEvent() throws Exception {
+    setDeviceAuthentication(engineerDevice.getMacAddress());
     ZoneEntryRequest request = new ZoneEntryRequest(restrictedZone.getId());
 
     deviceController.handleZoneEntry(engineerDevice.getMacAddress(), request);
@@ -141,6 +152,7 @@ class ZoneAccessIntegrationTest {
 
   @Test
   void zoneEntryWithoutAccess_shouldLogAccessDeniedEvent() throws Exception {
+    setDeviceAuthentication(workerDevice.getMacAddress());
     ZoneEntryRequest request = new ZoneEntryRequest(restrictedZone.getId());
 
     deviceController.handleZoneEntry(workerDevice.getMacAddress(), request);
@@ -171,6 +183,7 @@ class ZoneAccessIntegrationTest {
 
   @Test
   void zoneEntryOpenZone_shouldLogAccessGrantedEvent() throws Exception {
+    setDeviceAuthentication(workerDevice.getMacAddress());
     ZoneEntryRequest request = new ZoneEntryRequest(openZone.getId());
 
     deviceController.handleZoneEntry(workerDevice.getMacAddress(), request);
@@ -190,20 +203,22 @@ class ZoneAccessIntegrationTest {
 
   @Test
   void multipleZoneEntries_shouldLogMultipleEvents() {
+    setDeviceAuthentication(engineerDevice.getMacAddress());
     ZoneEntryRequest request = new ZoneEntryRequest(restrictedZone.getId());
 
     deviceController.handleZoneEntry(engineerDevice.getMacAddress(), request);
+    
+    SecurityContextHolder.clearContext();
+    setDeviceAuthentication(workerDevice.getMacAddress());
     deviceController.handleZoneEntry(workerDevice.getMacAddress(), request);
 
     List<Event> events = eventRepository.findAll();
     assertEquals(2, events.size(), "Should have logged two events");
 
-    long grantedCount = events.stream()
-        .filter(e -> e.getEventType() == EventTypes.ACCESS_GRANTED)
-        .count();
-    long deniedCount = events.stream()
-        .filter(e -> e.getEventType() == EventTypes.ACCESS_DENIED)
-        .count();
+    long grantedCount =
+        events.stream().filter(e -> e.getEventType() == EventTypes.ACCESS_GRANTED).count();
+    long deniedCount =
+        events.stream().filter(e -> e.getEventType() == EventTypes.ACCESS_DENIED).count();
 
     assertEquals(1, grantedCount, "Should have one ACCESS_GRANTED event");
     assertEquals(1, deniedCount, "Should have one ACCESS_DENIED event");
