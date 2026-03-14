@@ -81,17 +81,17 @@ class AuthServiceTest {
     Authentication authentication = mock(Authentication.class);
     AppUserDetails userDetails = mock(AppUserDetails.class);
 
-    when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+  
+    lenient().when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(authentication);
 
-    when(authentication.getPrincipal()).thenReturn(userDetails);
-    when(userDetails.getId()).thenReturn(user.getId());
-    when(userDetails.getUsername()).thenReturn(user.getEmail());
+    lenient().when(authentication.getPrincipal()).thenReturn(userDetails);
+    lenient().when(userDetails.getId()).thenReturn(user.getId());
+    lenient().when(userDetails.getUsername()).thenReturn(user.getEmail());
     
-    when(userRepo.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
-    when(userRepo.save(any(User.class))).thenReturn(user);
-    when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("mocked-jwt");
-
+    lenient().when(userRepo.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+    lenient().when(userRepo.save(any(User.class))).thenReturn(user);
+    lenient().when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("mocked-jwt");
 
     JwtResponse response = authService.login(req);
 
@@ -99,7 +99,6 @@ class AuthServiceTest {
     assertEquals("mocked-jwt", response.accessToken());
     verify(userRepo, times(1)).save(any(User.class)); // refresh token save
   }
-
 
   @Test
   void login_shouldThrowException_whenInvalidCredentials() {
@@ -121,4 +120,3 @@ class AuthServiceTest {
     assertThrows(org.springframework.security.authentication.BadCredentialsException.class, () -> authService.login(req));
   }
 }
-
