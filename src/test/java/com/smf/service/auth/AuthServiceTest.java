@@ -28,96 +28,108 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock private UserRepository userRepo;
-    @Mock private BCryptPasswordEncoder passwordEncoder;
-    @Mock private AuthenticationManager authManager;
-    @Mock private JwtUtils jwtUtils;
 
-    @InjectMocks private AuthService authService;
+@Mock private UserRepository userRepo;
+@Mock private BCryptPasswordEncoder passwordEncoder;
+@Mock private AuthenticationManager authManager;
+@Mock private JwtUtils jwtUtils;
+@Mock private RefreshTokenService refreshService;
 
-    private User user;
-    private UUID fixedUUID;
+@InjectMocks private AuthService authService;
 
-    @BeforeEach
-    void setup() {
-        fixedUUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        user = new User("test@mail.com", "testUser", "encodedPass");
-        user.setId(fixedUUID);
-    }
+private User user;
+private UUID fixedUUID;
 
-    @Test
-    void register_shouldCreateUser_whenEmailNotExists() {
-        RegisterRequest req = new RegisterRequest("test@mail.com", "testUser", "password");
+@BeforeEach
+void setup() {
+    fixedUUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    user = new User("test@mail.com", "testUser", "encodedPass");
+    user.setId(fixedUUID);
+}
 
-        when(userRepo.existsByEmail(req.email())).thenReturn(false);
-        when(passwordEncoder.encode(req.password())).thenReturn("encodedPass");
-        when(userRepo.save(any(User.class))).thenReturn(user);
+@Test
+void register_shouldCreateUser_whenEmailNotExists() {
+    RegisterRequest req = new RegisterRequest("test@mail.com", "testUser", "password");
 
-        User savedUser = authService.register(req);
+    when(userRepo.existsByEmail(req.email())).thenReturn(false);
+    when(passwordEncoder.encode(req.password())).thenReturn("encodedPass");
+    when(userRepo.save(any(User.class))).thenReturn(user);
+    when(refreshService.createRefreshToken(any(User.class))).thenReturn("mock-refresh");
 
-        assertNotNull(savedUser);
-        assertEquals("test@mail.com", savedUser.getEmail());
-        assertEquals(fixedUUID, savedUser.getId());
+    User savedUser = authService.register(req);
 
-        verify(userRepo, times(1)).save(any(User.class));
-    }
+    assertNotNull(savedUser);
+    assertEquals("test@mail.com", savedUser.getEmail());
+    assertEquals(fixedUUID, savedUser.getId());
 
-    @Test
-    void register_shouldThrowException_whenEmailExists() {
-        RegisterRequest req = new RegisterRequest("test@mail.com", "testUser", "password");
+    verify(userRepo, times(1)).save(any(User.class));
+    verify(refreshService, times(1)).createRefreshToken(any(User.class));
+}
 
-        when(userRepo.existsByEmail(req.email())).thenReturn(true);
+@Test
+void register_shouldThrowException_whenEmailExists() {
+    RegisterRequest req = new RegisterRequest("test@mail.com", "testUser", "password");
 
-        AppError exception = assertThrows(AppError.class, () -> authService.register(req));
+    when(userRepo.existsByEmail(req.email())).thenReturn(true);
 
-        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
-        verify(userRepo, never()).save(any(User.class));
-    }
+    AppError exception = assertThrows(AppError.class, () -> authService.register(req));
 
-    @Test
-    void login_shouldReturnJwtResponse_whenCredentialsValid() {
-        LoginRequest req = new LoginRequest("test@mail.com", "password");
+    assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+    verify(userRepo, never()).save(any(User.class));
+}
 
-        Authentication authentication = mock(Authentication.class);
-        AppUserDetails userDetails = mock(AppUserDetails.class);
+@Test
+void login_shouldReturnJwtResponse_whenCredentialsValid() {
+    LoginRequest req = new LoginRequest("test@mail.com", "password");
 
-        when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+    Authentication authentication = mock(Authentication.class);
+    AppUserDetails userDetails = mock(AppUserDetails.class);
+
+    when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
             .thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(userDetails);
-        when(userDetails.getId()).thenReturn(fixedUUID);
-        when(jwtUtils.generateToken(authentication)).thenReturn("mocked-jwt");
 
-        var response = authService.login(req);
+    when(authentication.getPrincipal()).thenReturn(userDetails);
+    when(userDetails.getId()).thenReturn(fixedUUID);
+    when(userDetails.getUser()).thenReturn(user);
 
-        assertNotNull(response);
-        assertEquals("mocked-jwt", response.token());
-    }
+    when(jwtUtils.generateToken(authentication)).thenReturn("mocked-jwt");
+    when(refreshService.createRefreshToken(user)).thenReturn("mock-refresh");
 
-    @Test
-    void login_shouldThrowException_whenInvalidCredentials() {
-        LoginRequest req = new LoginRequest("test@mail.com", "wrongpassword");
+    var response = authService.login(req);
 
-        when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+    assertNotNull(response);
+    assertTrue(response.token().contains("mocked-jwt"));
+}
+
+@Test
+void login_shouldThrowException_whenInvalidCredentials() {
+    LoginRequest req = new LoginRequest("test@mail.com", "wrongpassword");
+
+    when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
             .thenThrow(new BadCredentialsException("Invalid credentials"));
 
-        BadCredentialsException exception = assertThrows(
+    BadCredentialsException exception = assertThrows(
             BadCredentialsException.class,
             () -> authService.login(req)
-        );
-        assertEquals("Invalid credentials", exception.getMessage());
-    }
+    );
 
-    @Test
-    void login_shouldThrowException_whenEmailNotExists() {
-        LoginRequest req = new LoginRequest("nonexistent@mail.com", "password");
+    assertEquals("Invalid credentials", exception.getMessage());
+}
 
-        when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+@Test
+void login_shouldThrowException_whenEmailNotExists() {
+    LoginRequest req = new LoginRequest("nonexistent@mail.com", "password");
+
+    when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
             .thenThrow(new BadCredentialsException("Invalid credentials"));
 
-        BadCredentialsException exception = assertThrows(
+    BadCredentialsException exception = assertThrows(
             BadCredentialsException.class,
             () -> authService.login(req)
-        );
-        assertEquals("Invalid credentials", exception.getMessage());
-    }
+    );
+
+    assertEquals("Invalid credentials", exception.getMessage());
+}
+
+
 }
