@@ -1,6 +1,7 @@
 package com.smf.model;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +12,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
@@ -29,20 +31,28 @@ public class User {
   @GeneratedValue(strategy = GenerationType.UUID)
   UUID id;
 
+  @Column(nullable = true, length = 255)
+  private String refreshTokenHash;
+  
+  @Column(nullable = true)
+  private LocalDateTime refreshTokenExpiry;
+
   String username;
-  @NaturalId String email;
+@NaturalId
+  @Column(nullable = false, unique = true)
+  String email;
 
   String password;
 
-  @ManyToMany(
+@ManyToMany(
       fetch = FetchType.EAGER,
       cascade = {
         CascadeType.DETACH,
         CascadeType.MERGE,
         CascadeType.PERSIST,
-        CascadeType.REFRESH,
-        CascadeType.REMOVE
+        CascadeType.REFRESH
       })
+
   @JoinTable(
       name = "user_roles",
       joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),

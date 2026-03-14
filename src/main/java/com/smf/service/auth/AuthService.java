@@ -9,9 +9,15 @@ import com.smf.security.AppUserDetails;
 import com.smf.security.JwtUtils;
 import com.smf.util.AppError;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -23,8 +29,31 @@ public class AuthService implements IAuthService {
 
   private final UserRepository userRepo;
   private final BCryptPasswordEncoder passwordEncoder;
-  private final AuthenticationManager authManager;
+private final AuthenticationManager authManager;
   private final JwtUtils jwtUtils;
+
+  @Value("${jwt.refresh.expiration:1209600000}")
+  private long refreshTokenExpiryMs;
+
+
+  private String generateRefreshToken(User user) {
+    String refreshToken = UUID.randomUUID().toString();
+    String hash = passwordEncoder.encode(refreshToken);
+    user.setRefreshTokenHash(hash);
+    user.setRefreshTokenExpiry(LocalDateTime.now().plusSeconds(refreshTokenExpiryMs / 1000));
+    userRepo.save(user);
+    return refreshToken;
+  }
+
+  private JwtResponse generateTokens(User user) {
+    AppUserDetails userDetails = AppUserDetails.buildUserDetails(user);
+    String jwt = jwtUtils.generateTokenFromUserDetails(userDetails);
+
+    String refreshToken = generateRefreshToken(user);
+    return new JwtResponse(user.getId(), jwt, refreshToken);
+  }
+
+
 
   @Override
   public JwtResponse login(LoginRequest req) {
@@ -32,11 +61,11 @@ public class AuthService implements IAuthService {
         authManager.authenticate(
             new UsernamePasswordAuthenticationToken(req.email(), req.password()));
     SecurityContextHolder.getContext().setAuthentication(auth);
-    String jwt = jwtUtils.generateToken(auth);
     AppUserDetails userDetails = (AppUserDetails) auth.getPrincipal();
-
-    return new JwtResponse(userDetails.getId(), jwt);
+    User user = userRepo.findByEmail(userDetails.getUsername()).orElseThrow();
+    return generateTokens(user);
   }
+
 
   @Override
   public User register(RegisterRequest req) {
@@ -46,6 +75,46 @@ public class AuthService implements IAuthService {
 
     User newUser = new User(req.email(), req.username(), passwordEncoder.encode(req.password()));
 
-    return userRepo.save(newUser);
+    User savedUser = userRepo.save(newUser);
+    return savedUser;
+  }
+
+
+  @Transactional
+  public JwtResponse refresh(String refreshToken) {
+    User user = userRepo.findAll().stream()
+        .filter(u -> u.getRefreshTokenHash() != null && 
+                     passwordEncoder.matches(refreshToken, u.getRefreshTokenHash()))
+        .findFirst()
+        .orElseThrow(() -> new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+
+    if (user.getRefreshTokenExpiry() == null || user.getRefreshTokenExpiry().isBefore(LocalDateTime.now())) {
+      throw new AppError(HttpStatus.UNAUTHORIZED, "Refresh token expired");
+    }
+
+
+
+    user.setRefreshTokenHash(null);
+    user.setRefreshTokenExpiry(null);
+    userRepo.save(user);
+
+
+    return generateTokens(user);
+  }
+
+
+  @Transactional
+  public void logout(String refreshToken) {
+    User user = userRepo.findAll().stream()
+        .filter(u -> u.getRefreshTokenHash() != null && 
+                     passwordEncoder.matches(refreshToken, u.getRefreshTokenHash()))
+        .findFirst()
+        .orElseThrow(() -> new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+
+    user.setRefreshTokenHash(null);
+    user.setRefreshTokenExpiry(null);
+    userRepo.save(user);
   }
 }
+
+

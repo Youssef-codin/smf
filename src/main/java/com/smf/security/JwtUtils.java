@@ -31,7 +31,7 @@ public class JwtUtils {
 		this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
 	}
 
-	public String generateToken(Authentication auth) {
+public String generateToken(Authentication auth) {
 		AppUserDetails userPrincipal = (AppUserDetails) auth.getPrincipal();
 
 		List<String> roles = userPrincipal
@@ -49,16 +49,31 @@ public class JwtUtils {
 				.compact();
 	}
 
-	public String getUsernameFromToken(String token) {
+	public String generateTokenFromUserDetails(AppUserDetails userDetails) {
+		List<String> roles = userDetails.getAuthorities()
+				.stream()
+				.map(GrantedAuthority::getAuthority).toList();
+
+		return Jwts.builder()
+				.subject(userDetails.getId().toString())
+				.claim("email", userDetails.getUsername())
+				.claim("roles", roles)
+				.issuedAt(new Date())
+				.expiration(new Date((new Date()).getTime() + jwtExpirationMs))
+				.signWith(key)
+				.compact();
+	}
+
+
+	public String getUserIdFromToken(String token) {
 		return Jwts.parser()
 				.verifyWith(key)
 				.build()
 				.parseSignedClaims(token)
 				.getPayload()
 				.getSubject();
-		// notice the subject above when generating the token is the username,
-		// we use email so its technically the email
 	}
+
 
 	public boolean validateJwtToken(String token) throws JwtException {
 		Jwts.parser()

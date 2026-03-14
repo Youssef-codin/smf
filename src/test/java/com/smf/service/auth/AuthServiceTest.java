@@ -9,6 +9,7 @@ import com.smf.dto.auth.RegisterRequest;
 import com.smf.model.User;
 import com.smf.repo.UserRepository;
 import com.smf.security.AppUserDetails;
+import com.smf.dto.auth.JwtResponse;
 import com.smf.security.JwtUtils;
 import com.smf.util.AppError;
 import java.util.UUID;
@@ -23,6 +24,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -83,14 +85,21 @@ class AuthServiceTest {
         .thenReturn(authentication);
 
     when(authentication.getPrincipal()).thenReturn(userDetails);
-    when(userDetails.getId()).thenReturn(UUID.randomUUID());
-    when(jwtUtils.generateToken(authentication)).thenReturn("mocked-jwt");
+    when(userDetails.getId()).thenReturn(user.getId());
+    when(userDetails.getUsername()).thenReturn(user.getEmail());
+    
+    when(userRepo.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+    when(userRepo.save(any(User.class))).thenReturn(user);
+    when(passwordEncoder.encode(anyString())).thenReturn("mocked-hash");
+    when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("mocked-jwt");
 
-    var response = authService.login(req);
+    JwtResponse response = authService.login(req);
 
     assertNotNull(response);
-    assertEquals("mocked-jwt", response.token());
+    assertEquals("mocked-jwt", response.accessToken());
+    verify(userRepo, times(1)).save(any(User.class)); // refresh token save
   }
+
 
   @Test
   void login_shouldThrowException_whenInvalidCredentials() {
