@@ -90,8 +90,8 @@ class AuthServiceTest {
     
     when(userRepo.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
     when(userRepo.save(any(User.class))).thenReturn(user);
-    when(passwordEncoder.encode(anyString())).thenReturn("mocked-hash");
     when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("mocked-jwt");
+
 
     JwtResponse response = authService.login(req);
 
