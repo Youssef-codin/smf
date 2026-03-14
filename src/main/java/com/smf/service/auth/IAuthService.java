@@ -6,7 +6,7 @@ import com.smf.dto.auth.RegisterRequest;
 import com.smf.model.User;
 
 public interface IAuthService {
-  JwtResponse login(LoginRequest req);
-
-  User register(RegisterRequest req);
+    JwtResponse login(LoginRequest req);
+    User register(RegisterRequest req);
+    JwtResponse refresh(String refreshToken);
 }

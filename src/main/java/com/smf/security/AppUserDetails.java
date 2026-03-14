@@ -2,62 +2,68 @@ package com.smf.security;
 
 import com.smf.model.User;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-@AllArgsConstructor
+@Getter
 public class AppUserDetails implements UserDetails {
-  private UUID id;
-  private String email;
-  private String password;
-  private Collection<GrantedAuthority> authorities;
 
-  public static AppUserDetails buildUserDetails(User user) {
-    List<GrantedAuthority> authorities =
-        user.getRoles().stream()
-            .map(role -> new SimpleGrantedAuthority(role.getRoleName()))
-            .collect(Collectors.toList());
+    private final UUID id;
+    private final String email;
+    private final String password;
+    private final Collection<? extends GrantedAuthority> authorities;
+    private final User user;
 
-    return new AppUserDetails(user.getId(), user.getEmail(), user.getPassword(), authorities);
-  }
+    public AppUserDetails(User user) {
+        this.id = user.getId();
+        this.email = user.getEmail();
+        this.password = user.getPassword();
+        this.user = user;
+        this.authorities = user.getRoles().stream().map(r -> (GrantedAuthority) r::getRoleName).toList();
+    }
 
-  @Override
-  public Collection<? extends GrantedAuthority> getAuthorities() {
-    return authorities;
-  }
+    public static AppUserDetails buildUserDetails(User user) {
+        return new AppUserDetails(user);
+    }
 
-  @Override
-  public String getPassword() {
-    return password;
-  }
+    @Override
+    public String getUsername() {
+        return email;
+    }
 
-  @Override
-  public String getUsername() {
-    return email;
-  }
+    @Override
+    public String getPassword() {
+        return password;
+    }
 
-  public UUID getId() {
-    return id;
-  }
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return authorities;
+    }
 
-  public void setId(UUID id) {
-    this.id = id;
-  }
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
-  public void setEmail(String username) {
-    this.email = username;
-  }
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
-  public void setPassword(String password) {
-    this.password = password;
-  }
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
-  public void setAuthorities(Collection<GrantedAuthority> authorities) {
-    this.authorities = authorities;
-  }
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    public User getUser() {
+        return user;
+    }
 }

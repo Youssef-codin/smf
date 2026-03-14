@@ -1,16 +1,13 @@
 package com.smf.security;
 
 import java.io.IOException;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import com.smf.service.auth.AppUserDetailsService;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,9 +32,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 			String jwt = parseJwt(request);
 
 			if (StringUtils.hasText(jwt) && jwtUtils.validateJwtToken(jwt)) {
-				// The subject in the JWT is the User ID (UUID), not the email
-				String userId = jwtUtils.getUsernameFromToken(jwt);
-				
+				String userId = jwtUtils.getUserIdFromToken(jwt);
 				UserDetails userDetails = service.loadUserById(userId);
 				
 				var auth = new UsernamePasswordAuthenticationToken(userDetails,
@@ -57,7 +52,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 		if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
 			return headerAuth.substring(7);
 		}
-
 		return null;
 	}
 }
