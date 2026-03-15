@@ -8,6 +8,10 @@ import com.smf.repo.UserRepository;
 import com.smf.security.AppUserDetails;
 import com.smf.security.JwtUtils;
 import com.smf.util.AppError;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -18,11 +22,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
-import java.security.SecureRandom;
-import java.util.Base64;
 
 @RequiredArgsConstructor
 @Service
@@ -64,11 +63,15 @@ public class AuthService implements IAuthService {
 
   @Override
   public JwtResponse login(LoginRequest req) {
-    Authentication auth = authManager.authenticate(
-        new UsernamePasswordAuthenticationToken(req.email(), req.password()));
+    Authentication auth =
+        authManager.authenticate(
+            new UsernamePasswordAuthenticationToken(req.email(), req.password()));
     SecurityContextHolder.getContext().setAuthentication(auth);
     AppUserDetails userDetails = (AppUserDetails) auth.getPrincipal();
-    User user = userRepo.findByEmail(userDetails.getUsername()).orElseThrow();
+    User user =
+        userRepo
+            .findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new AppError(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
     return generateTokens(user);
   }
 
@@ -91,11 +94,14 @@ public class AuthService implements IAuthService {
       throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token format");
     }
     String tokenId = parts[0];
-    User user = userRepo.findByRefreshTokenId(tokenId)
-        .orElseThrow(() -> new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
-    if (user.getRefreshTokenHash() == null || user.getRefreshTokenExpiry() == null ||
-        user.getRefreshTokenExpiry().isBefore(LocalDateTime.now()) ||
-        !passwordEncoder.matches(refreshToken, user.getRefreshTokenHash())) {
+    User user =
+        userRepo
+            .findByRefreshTokenId(tokenId)
+            .orElseThrow(() -> new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+    if (user.getRefreshTokenHash() == null
+        || user.getRefreshTokenExpiry() == null
+        || user.getRefreshTokenExpiry().isBefore(LocalDateTime.now())
+        || !passwordEncoder.matches(refreshToken, user.getRefreshTokenHash())) {
       throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
     }
     user.setRefreshTokenId(null);
@@ -112,10 +118,12 @@ public class AuthService implements IAuthService {
       throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token format");
     }
     String tokenId = parts[0];
-    User user = userRepo.findByRefreshTokenId(tokenId)
-        .orElseThrow(() -> new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
-    if (user.getRefreshTokenHash() == null ||
-        !passwordEncoder.matches(refreshToken, user.getRefreshTokenHash())) {
+    User user =
+        userRepo
+            .findByRefreshTokenId(tokenId)
+            .orElseThrow(() -> new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+    if (user.getRefreshTokenHash() == null
+        || !passwordEncoder.matches(refreshToken, user.getRefreshTokenHash())) {
       throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
     }
     user.setRefreshTokenId(null);
@@ -124,3 +132,4 @@ public class AuthService implements IAuthService {
     userRepo.save(user);
   }
 }
+
