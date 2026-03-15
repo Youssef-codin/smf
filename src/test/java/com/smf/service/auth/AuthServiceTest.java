@@ -108,6 +108,7 @@ verify(userRepo, times(1)).save(any(User.class)); // refresh token save
         .thenThrow(new org.springframework.security.authentication.BadCredentialsException("Invalid credentials"));
 
     assertThrows(org.springframework.security.authentication.BadCredentialsException.class, () -> authService.login(req));
+    
   }
 
   @Test

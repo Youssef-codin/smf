@@ -44,7 +44,7 @@ public class User {
 
   String username;
 
-  @NaturalId
+  
   @Column(nullable = false, unique = true)
   String email;
 

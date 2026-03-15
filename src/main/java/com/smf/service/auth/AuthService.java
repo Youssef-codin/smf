@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.security.SecureRandom;
+import java.util.Base64;
 
 @RequiredArgsConstructor
 @Service
@@ -36,13 +38,20 @@ public class AuthService implements IAuthService {
 
   private String generateRefreshToken(User user) {
     String refreshTokenId = UUID.randomUUID().toString();
-    String randomSuffix = UUID.randomUUID().toString().substring(0, 8);
+
+    SecureRandom secureRandom = new SecureRandom();
+    byte[] randomBytes = new byte[32];
+    secureRandom.nextBytes(randomBytes);
+    String randomSuffix = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+
     String refreshToken = refreshTokenId + "." + randomSuffix;
     String hash = passwordEncoder.encode(refreshToken);
+
     user.setRefreshTokenId(refreshTokenId);
     user.setRefreshTokenHash(hash);
     user.setRefreshTokenExpiry(LocalDateTime.now().plusSeconds(refreshTokenExpiryMs / 1000));
     userRepo.save(user);
+
     return refreshToken;
   }
 
@@ -53,10 +62,7 @@ public class AuthService implements IAuthService {
     return new JwtResponse(user.getId(), jwt, refreshToken);
   }
 
-@Override
-  /**
-   * Authenticates user with email/password and returns JWT access + refresh tokens.
-   */
+  @Override
   public JwtResponse login(LoginRequest req) {
     Authentication auth = authManager.authenticate(
         new UsernamePasswordAuthenticationToken(req.email(), req.password()));
@@ -66,10 +72,7 @@ public class AuthService implements IAuthService {
     return generateTokens(user);
   }
 
-@Override
-  /**
-   * Registers new user if email not exists.
-   */
+  @Override
   public User register(RegisterRequest req) {
     boolean alreadyExist = userRepo.existsByEmail(req.email());
 
@@ -81,9 +84,6 @@ public class AuthService implements IAuthService {
     return savedUser;
   }
 
-  /**
-   * Refreshes access token using valid refresh token, invalidates old refresh token (rotation).
-   */
   @Transactional
   public JwtResponse refresh(String refreshToken) {
     String[] parts = refreshToken.split("\\.", 2);
@@ -105,9 +105,6 @@ public class AuthService implements IAuthService {
     return generateTokens(user);
   }
 
-  /**
-   * Invalidates refresh token to logout user session.
-   */
   @Transactional
   public void logout(String refreshToken) {
     String[] parts = refreshToken.split("\\.", 2);
@@ -116,7 +113,7 @@ public class AuthService implements IAuthService {
     }
     String tokenId = parts[0];
     User user = userRepo.findByRefreshTokenId(tokenId)
-      .orElseThrow(() -> new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+        .orElseThrow(() -> new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
     if (user.getRefreshTokenHash() == null ||
         !passwordEncoder.matches(refreshToken, user.getRefreshTokenHash())) {
       throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token");

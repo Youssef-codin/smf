@@ -21,6 +21,7 @@ public class JwtUtils {
 
 	@Value("${jwt.secret}")
 	private String jwtSecret;
+
 	@Value("${jwt.expiration}")
 	private int jwtExpirationMs;
 
@@ -31,28 +32,17 @@ public class JwtUtils {
 		this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
 	}
 
-public String generateToken(Authentication auth) {
+	public String generateToken(Authentication auth) {
 		AppUserDetails userPrincipal = (AppUserDetails) auth.getPrincipal();
-
-		List<String> roles = userPrincipal
-				.getAuthorities()
-				.stream()
-				.map(GrantedAuthority::getAuthority).toList();
-
-		return Jwts.builder()
-				.subject(userPrincipal.getId().toString())
-				.claim("email", userPrincipal.getUsername())
-				.claim("roles", roles)
-				.issuedAt(new Date())
-				.expiration(new Date((new Date()).getTime() + jwtExpirationMs))
-				.signWith(key)
-				.compact();
+		return generateTokenFromUserDetails(userPrincipal);
 	}
 
 	public String generateTokenFromUserDetails(AppUserDetails userDetails) {
-		List<String> roles = userDetails.getAuthorities()
+		List<String> roles = userDetails
+				.getAuthorities()
 				.stream()
-				.map(GrantedAuthority::getAuthority).toList();
+				.map(GrantedAuthority::getAuthority)
+				.toList();
 
 		return Jwts.builder()
 				.subject(userDetails.getId().toString())
@@ -64,7 +54,6 @@ public String generateToken(Authentication auth) {
 				.compact();
 	}
 
-
 	public String getUserIdFromToken(String token) {
 		return Jwts.parser()
 				.verifyWith(key)
@@ -73,7 +62,6 @@ public String generateToken(Authentication auth) {
 				.getPayload()
 				.getSubject();
 	}
-
 
 	public boolean validateJwtToken(String token) throws JwtException {
 		Jwts.parser()
