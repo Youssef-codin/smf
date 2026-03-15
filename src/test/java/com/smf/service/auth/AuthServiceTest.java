@@ -97,7 +97,7 @@ class AuthServiceTest {
     assertNotNull(response);
     assertEquals("mocked-jwt", response.accessToken());
     assertNotNull(response.refreshToken());
-    verify(userRepo, times(2)).save(any(User.class)); // login + refresh token save
+verify(userRepo, times(1)).save(any(User.class)); // refresh token save
   }
 
   @Test
