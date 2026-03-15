@@ -12,6 +12,7 @@ import com.smf.repo.UserRepository;
 import com.smf.security.AppUserDetails;
 import com.smf.security.JwtUtils;
 import com.smf.util.AppError;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -119,5 +120,183 @@ verify(userRepo, times(1)).save(any(User.class)); // refresh token save
         .thenThrow(new org.springframework.security.authentication.BadCredentialsException("Invalid credentials"));
 
     assertThrows(org.springframework.security.authentication.BadCredentialsException.class, () -> authService.login(req));
+  }
+
+  @Test
+  void refresh_shouldReturnNewTokens_whenValidRefreshToken() {
+    String tokenId = UUID.randomUUID().toString();
+    String refreshToken = tokenId + ".abc123";
+    user.setRefreshTokenId(tokenId);
+    user.setRefreshTokenHash("hashedToken");
+    user.setRefreshTokenExpiry(LocalDateTime.now().plusHours(1));
+
+    when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches(refreshToken, "hashedToken")).thenReturn(true);
+    when(userRepo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("new-jwt");
+
+    JwtResponse response = authService.refresh(refreshToken);
+
+    assertNotNull(response);
+    assertEquals("new-jwt", response.accessToken());
+    assertNotNull(response.refreshToken());
+    verify(userRepo, times(2)).save(any(User.class));
+  }
+
+  @Test
+  void refresh_shouldThrowException_whenInvalidTokenFormat() {
+    String invalidToken = "no-dot-here";
+
+    AppError exception = assertThrows(AppError.class, () -> authService.refresh(invalidToken));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    assertEquals("Invalid refresh token format", exception.getMessage());
+  }
+
+  @Test
+  void refresh_shouldThrowException_whenTokenNotFound() {
+    String tokenId = UUID.randomUUID().toString();
+    String refreshToken = tokenId + ".abc123";
+
+    when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.empty());
+
+    AppError exception = assertThrows(AppError.class, () -> authService.refresh(refreshToken));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    assertEquals("Invalid refresh token", exception.getMessage());
+  }
+
+  @Test
+  void refresh_shouldThrowException_whenRefreshTokenIdIsNull() {
+    String tokenId = UUID.randomUUID().toString();
+    String refreshToken = tokenId + ".abc123";
+    user.setRefreshTokenId(null);
+    user.setRefreshTokenHash("hashedToken");
+
+    when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
+
+    AppError exception = assertThrows(AppError.class, () -> authService.refresh(refreshToken));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    assertEquals("Invalid or expired refresh token", exception.getMessage());
+  }
+
+  @Test
+  void refresh_shouldThrowException_whenRefreshTokenExpiryIsNull() {
+    String tokenId = UUID.randomUUID().toString();
+    String refreshToken = tokenId + ".abc123";
+    user.setRefreshTokenId(tokenId);
+    user.setRefreshTokenHash("hashedToken");
+    user.setRefreshTokenExpiry(null);
+
+    when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
+
+    AppError exception = assertThrows(AppError.class, () -> authService.refresh(refreshToken));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    assertEquals("Invalid or expired refresh token", exception.getMessage());
+  }
+
+  @Test
+  void refresh_shouldThrowException_whenTokenExpired() {
+    String tokenId = UUID.randomUUID().toString();
+    String refreshToken = tokenId + ".abc123";
+    user.setRefreshTokenId(tokenId);
+    user.setRefreshTokenHash("hashedToken");
+    user.setRefreshTokenExpiry(LocalDateTime.now().minusHours(1));
+
+    when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
+
+    AppError exception = assertThrows(AppError.class, () -> authService.refresh(refreshToken));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    assertEquals("Invalid or expired refresh token", exception.getMessage());
+  }
+
+  @Test
+  void refresh_shouldThrowException_whenTokenHashMismatch() {
+    String tokenId = UUID.randomUUID().toString();
+    String refreshToken = tokenId + ".abc123";
+    user.setRefreshTokenId(tokenId);
+    user.setRefreshTokenHash("hashedToken");
+    user.setRefreshTokenExpiry(LocalDateTime.now().plusHours(1));
+
+    when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches(refreshToken, "hashedToken")).thenReturn(false);
+
+    AppError exception = assertThrows(AppError.class, () -> authService.refresh(refreshToken));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    assertEquals("Invalid or expired refresh token", exception.getMessage());
+  }
+
+  @Test
+  void logout_shouldClearTokens_whenValidRefreshToken() {
+    String tokenId = UUID.randomUUID().toString();
+    String refreshToken = tokenId + ".abc123";
+    user.setRefreshTokenId(tokenId);
+    user.setRefreshTokenHash("hashedToken");
+
+    when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches(refreshToken, "hashedToken")).thenReturn(true);
+    when(userRepo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    assertDoesNotThrow(() -> authService.logout(refreshToken));
+
+    verify(userRepo).save(any(User.class));
+  }
+
+  @Test
+  void logout_shouldThrowException_whenInvalidTokenFormat() {
+    String invalidToken = "no-dot-here";
+
+    AppError exception = assertThrows(AppError.class, () -> authService.logout(invalidToken));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    assertEquals("Invalid refresh token format", exception.getMessage());
+  }
+
+  @Test
+  void logout_shouldThrowException_whenTokenNotFound() {
+    String tokenId = UUID.randomUUID().toString();
+    String refreshToken = tokenId + ".abc123";
+
+    when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.empty());
+
+    AppError exception = assertThrows(AppError.class, () -> authService.logout(refreshToken));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    assertEquals("Invalid refresh token", exception.getMessage());
+  }
+
+  @Test
+  void logout_shouldThrowException_whenRefreshTokenIdIsNull() {
+    String tokenId = UUID.randomUUID().toString();
+    String refreshToken = tokenId + ".abc123";
+    user.setRefreshTokenId(null);
+    user.setRefreshTokenHash("hashedToken");
+
+    when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
+
+    AppError exception = assertThrows(AppError.class, () -> authService.logout(refreshToken));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    assertEquals("Invalid refresh token", exception.getMessage());
+  }
+
+  @Test
+  void logout_shouldThrowException_whenTokenHashMismatch() {
+    String tokenId = UUID.randomUUID().toString();
+    String refreshToken = tokenId + ".abc123";
+    user.setRefreshTokenId(tokenId);
+    user.setRefreshTokenHash("hashedToken");
+
+    when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches(refreshToken, "hashedToken")).thenReturn(false);
+
+    AppError exception = assertThrows(AppError.class, () -> authService.logout(refreshToken));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+    assertEquals("Invalid refresh token", exception.getMessage());
   }
 }
