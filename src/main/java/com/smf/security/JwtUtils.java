@@ -21,6 +21,7 @@ public class JwtUtils {
 
 	@Value("${jwt.secret}")
 	private String jwtSecret;
+
 	@Value("${jwt.expiration}")
 	private int jwtExpirationMs;
 
@@ -33,15 +34,19 @@ public class JwtUtils {
 
 	public String generateToken(Authentication auth) {
 		AppUserDetails userPrincipal = (AppUserDetails) auth.getPrincipal();
+		return generateTokenFromUserDetails(userPrincipal);
+	}
 
-		List<String> roles = userPrincipal
+	public String generateTokenFromUserDetails(AppUserDetails userDetails) {
+		List<String> roles = userDetails
 				.getAuthorities()
 				.stream()
-				.map(GrantedAuthority::getAuthority).toList();
+				.map(GrantedAuthority::getAuthority)
+				.toList();
 
 		return Jwts.builder()
-				.subject(userPrincipal.getId().toString())
-				.claim("email", userPrincipal.getUsername())
+				.subject(userDetails.getId().toString())
+				.claim("email", userDetails.getUsername())
 				.claim("roles", roles)
 				.issuedAt(new Date())
 				.expiration(new Date((new Date()).getTime() + jwtExpirationMs))
@@ -49,15 +54,13 @@ public class JwtUtils {
 				.compact();
 	}
 
-	public String getUsernameFromToken(String token) {
+	public String getUserIdFromToken(String token) {
 		return Jwts.parser()
 				.verifyWith(key)
 				.build()
 				.parseSignedClaims(token)
 				.getPayload()
 				.getSubject();
-		// notice the subject above when generating the token is the username,
-		// we use email so its technically the email
 	}
 
 	public boolean validateJwtToken(String token) throws JwtException {

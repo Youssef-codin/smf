@@ -36,7 +36,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
 			if (StringUtils.hasText(jwt) && jwtUtils.validateJwtToken(jwt)) {
 				// The subject in the JWT is the User ID (UUID), not the email
-				String userId = jwtUtils.getUsernameFromToken(jwt);
+		String userId = jwtUtils.getUserIdFromToken(jwt);
 				
 				UserDetails userDetails = service.loadUserById(userId);
 				

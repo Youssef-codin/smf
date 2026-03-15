@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.smf.dto.auth.JwtResponse;
 import com.smf.dto.auth.LoginRequest;
 import com.smf.dto.auth.RegisterRequest;
 import com.smf.model.User;
@@ -11,6 +12,7 @@ import com.smf.repo.UserRepository;
 import com.smf.security.AppUserDetails;
 import com.smf.security.JwtUtils;
 import com.smf.util.AppError;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,17 +81,23 @@ class AuthServiceTest {
     Authentication authentication = mock(Authentication.class);
     AppUserDetails userDetails = mock(AppUserDetails.class);
 
-    when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+  
+    lenient().when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(authentication);
 
-    when(authentication.getPrincipal()).thenReturn(userDetails);
-    when(userDetails.getId()).thenReturn(UUID.randomUUID());
-    when(jwtUtils.generateToken(authentication)).thenReturn("mocked-jwt");
+    lenient().when(authentication.getPrincipal()).thenReturn(userDetails);
+    lenient().when(userDetails.getUsername()).thenReturn(user.getEmail());
+    
+    lenient().when(userRepo.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+    lenient().when(userRepo.save(any(User.class))).thenReturn(user);
+    lenient().when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("mocked-jwt"); 
 
-    var response = authService.login(req);
+    JwtResponse response = authService.login(req);
 
     assertNotNull(response);
-    assertEquals("mocked-jwt", response.token());
+    assertEquals("mocked-jwt", response.accessToken());
+    assertNotNull(response.refreshToken());
+verify(userRepo, times(1)).save(any(User.class)); // refresh token save
   }
 
   @Test
@@ -100,6 +108,7 @@ class AuthServiceTest {
         .thenThrow(new org.springframework.security.authentication.BadCredentialsException("Invalid credentials"));
 
     assertThrows(org.springframework.security.authentication.BadCredentialsException.class, () -> authService.login(req));
+    
   }
 
   @Test
@@ -112,4 +121,3 @@ class AuthServiceTest {
     assertThrows(org.springframework.security.authentication.BadCredentialsException.class, () -> authService.login(req));
   }
 }
-
