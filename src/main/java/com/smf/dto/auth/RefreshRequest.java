@@ -1,4 +1,6 @@
 package com.smf.dto.auth;
 
-public record RefreshRequest(String refreshToken) {
+import jakarta.validation.constraints.NotBlank;
+
+public record RefreshRequest(@NotBlank(message = "Refresh token required") String refreshToken) {
 }

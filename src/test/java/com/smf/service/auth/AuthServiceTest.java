@@ -4,14 +4,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.smf.dto.auth.JwtResponse;
 import com.smf.dto.auth.LoginRequest;
 import com.smf.dto.auth.RegisterRequest;
 import com.smf.model.User;
 import com.smf.repo.UserRepository;
 import com.smf.security.AppUserDetails;
-import com.smf.dto.auth.JwtResponse;
 import com.smf.security.JwtUtils;
 import com.smf.util.AppError;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -86,18 +86,18 @@ class AuthServiceTest {
         .thenReturn(authentication);
 
     lenient().when(authentication.getPrincipal()).thenReturn(userDetails);
-    lenient().when(userDetails.getId()).thenReturn(user.getId());
     lenient().when(userDetails.getUsername()).thenReturn(user.getEmail());
     
     lenient().when(userRepo.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
     lenient().when(userRepo.save(any(User.class))).thenReturn(user);
-    lenient().when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("mocked-jwt");
+    lenient().when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("mocked-jwt"); 
 
     JwtResponse response = authService.login(req);
 
     assertNotNull(response);
     assertEquals("mocked-jwt", response.accessToken());
-    verify(userRepo, times(1)).save(any(User.class)); // refresh token save
+    assertNotNull(response.refreshToken());
+    verify(userRepo, times(2)).save(any(User.class)); // login + refresh token save
   }
 
   @Test

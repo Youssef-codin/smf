@@ -28,17 +28,18 @@ public class AuthController {
     return ResponseEntity.ok(new ApiResponse(true, "Here's your token.", jwtResponse));
   }
 
-@PostMapping("/register")
+  @PostMapping("/register")
   public ResponseEntity<ApiResponse> addUser(@Valid @RequestBody RegisterRequest req) {
     User user = authService.register(req);
     return ResponseEntity.ok(new ApiResponse(true, "User added successfully", user));
   }
 
-@PostMapping("/refresh")
+  @PostMapping("/refresh")
   public ResponseEntity<ApiResponse> refresh(@Valid @RequestBody RefreshRequest req) {
     JwtResponse tokens = authService.refresh(req.refreshToken());
     return ResponseEntity.ok(new ApiResponse(true, "Tokens refreshed", tokens));
   }
+
   @PostMapping("/logout")
   public ResponseEntity<ApiResponse> logout(@Valid @RequestBody LogoutRequest req) {
     authService.logout(req.refreshToken());
