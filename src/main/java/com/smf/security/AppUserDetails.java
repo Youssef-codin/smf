@@ -18,16 +18,19 @@ public class AppUserDetails implements UserDetails {
   private Collection<GrantedAuthority> authorities;
 
   public static AppUserDetails buildUserDetails(User user) {
-    List<GrantedAuthority> authorities = user.getRoles().stream()
-        .flatMap(role -> {
-          List<GrantedAuthority> roleAuths = new java.util.ArrayList<>();
-          roleAuths.add(new SimpleGrantedAuthority(role.getRoleName()));
-          if (role.isAdmin()) {
-            roleAuths.add(new SimpleGrantedAuthority("ADMIN"));
-          }
-          return roleAuths.stream();
-        })
-        .collect(Collectors.toList());
+    List<GrantedAuthority> authorities =
+        user.getRoles().stream()
+            .flatMap(
+                role -> {
+                  List<GrantedAuthority> roleAuths = new java.util.ArrayList<>();
+                  roleAuths.add(new SimpleGrantedAuthority(role.getRoleName()));
+                  if (role.isAdmin()) {
+                    roleAuths.add(new SimpleGrantedAuthority("ADMIN"));
+                  }
+                  return roleAuths.stream();
+                })
+            .distinct()
+            .collect(Collectors.toList());
 
     return new AppUserDetails(user.getId(), user.getEmail(), user.getPassword(), authorities);
   }
