@@ -9,13 +9,11 @@ public interface IAuthService {
 
   JwtResponse login(LoginRequest req);
 
-
   User register(RegisterRequest req);
-
 
   JwtResponse refresh(String refreshToken);
 
-
   void logout(String refreshToken);
-}
 
+  JwtResponse googleSignIn(String idToken);
+}

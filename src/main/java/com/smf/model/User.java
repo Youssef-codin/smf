@@ -44,11 +44,19 @@ public class User {
 
   String username;
 
-  
   @Column(nullable = false, unique = true)
   String email;
 
   String password;
+
+  @Column(nullable = false, length = 20)
+  private String provider = "LOCAL";
+
+  @Column(nullable = true, unique = true)
+  private String googleId;
+
+  @Column(nullable = true, length = 512)
+  private String pictureUrl;
 
   @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
   @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
