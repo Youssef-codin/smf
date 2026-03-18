@@ -48,8 +48,9 @@ public class SeedData implements CommandLineRunner {
         Role engineerRole = seedRole("ENGINEER", false);
         Role managerRole = seedRole("MANAGER", false);
         Role workerRole = seedRole("WORKER", false);
+        Role userRole = seedRole("ROLE_USER", false);
 
-        System.out.println("Roles seeded: ADMIN, ENGINEER, MANAGER, WORKER");
+        System.out.println("Roles seeded: ADMIN, ENGINEER, MANAGER, WORKER, ROLE_USER");
 
         // Seed admin user
         User adminUser = seedAdminUser(adminRole);
