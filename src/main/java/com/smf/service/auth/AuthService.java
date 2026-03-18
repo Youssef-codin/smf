@@ -8,6 +8,9 @@ import com.smf.repo.UserRepository;
 import com.smf.security.AppUserDetails;
 import com.smf.security.JwtUtils;
 import com.smf.util.AppError;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -43,8 +46,30 @@ public class AuthService implements IAuthService {
   @Value("${google.jwks-uri}")
   private String googleJwksUri;
 
-  @Value("${google.client-ids}")
-  private List<String> googleClientIds;
+  @Value("${google.client-id-web}")
+  private String googleClientIdWeb;
+
+  @Value("${google.client-id-android}")
+  private String googleClientIdAndroid;
+
+  @Value("${google.client-id-ios}")
+  private String googleClientIdIos;
+
+  private String sha256Hash(String input) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+      StringBuilder hexString = new StringBuilder();
+      for (byte b : hash) {
+        String hex = Integer.toHexString(0xff & b);
+        if (hex.length() == 1) hexString.append('0');
+        hexString.append(hex);
+      }
+      return hexString.toString();
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException("SHA-256 not available", e);
+    }
+  }
 
   private String generateRefreshToken(User user) {
     String refreshTokenId = UUID.randomUUID().toString();
@@ -55,7 +80,7 @@ public class AuthService implements IAuthService {
     String randomSuffix = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
 
     String refreshToken = refreshTokenId + "." + randomSuffix;
-    String hash = passwordEncoder.encode(refreshToken);
+    String hash = sha256Hash(refreshToken);
 
     user.setRefreshTokenId(refreshTokenId);
     user.setRefreshTokenHash(hash);
@@ -112,7 +137,7 @@ public class AuthService implements IAuthService {
     if (user.getRefreshTokenHash() == null
         || user.getRefreshTokenExpiry() == null
         || user.getRefreshTokenExpiry().isBefore(LocalDateTime.now())
-        || !passwordEncoder.matches(refreshToken, user.getRefreshTokenHash())) {
+        || !sha256Hash(refreshToken).equals(user.getRefreshTokenHash())) {
       throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
     }
     user.setRefreshTokenId(null);
@@ -134,7 +159,7 @@ public class AuthService implements IAuthService {
             .findByRefreshTokenId(tokenId)
             .orElseThrow(() -> new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
     if (user.getRefreshTokenHash() == null
-        || !passwordEncoder.matches(refreshToken, user.getRefreshTokenHash())) {
+        || !sha256Hash(refreshToken).equals(user.getRefreshTokenHash())) {
       throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
     }
     user.setRefreshTokenId(null);
@@ -157,7 +182,15 @@ public class AuthService implements IAuthService {
 
     // 2. Validate audience matches one of our allowed client IDs
     List<String> audiences = jwt.getAudience();
-    if (audiences == null || audiences.stream().noneMatch(googleClientIds::contains)) {
+    boolean validAudience =
+        audiences != null
+            && audiences.stream()
+                .anyMatch(
+                    a ->
+                        a.equals(googleClientIdWeb)
+                            || a.equals(googleClientIdAndroid)
+                            || a.equals(googleClientIdIos));
+    if (!validAudience) {
       throw new AppError(HttpStatus.UNAUTHORIZED, "Google ID token audience mismatch");
     }
 
@@ -168,17 +201,25 @@ public class AuthService implements IAuthService {
     String pictureUrl = jwt.getClaimAsString("picture");
 
     // 4. Find by Google ID first (returning user)
-    User user = userRepo.findByGoogleId(googleId).orElseGet(() -> {
-      // 5. Try to link an existing local account by email, or create new one
-      User u = userRepo.findByEmail(email).orElseGet(() -> {
-        User newUser = new User(email, name != null ? name : email, null);
-        newUser.setProvider("GOOGLE");
-        return newUser;
-      });
-      u.setGoogleId(googleId);
-      u.setProvider("GOOGLE");
-      return u;
-    });
+    User user =
+        userRepo
+            .findByGoogleId(googleId)
+            .orElseGet(
+                () -> {
+                  // 5. Try to link an existing local account by email, or create new one
+                  User u =
+                      userRepo
+                          .findByEmail(email)
+                          .orElseGet(
+                              () -> {
+                                User newUser = new User(email, name != null ? name : email, null);
+                                newUser.setProvider("GOOGLE");
+                                return newUser;
+                              });
+                  u.setGoogleId(googleId);
+                  u.setProvider("GOOGLE");
+                  return u;
+                });
 
     // Always keep the profile picture fresh
     user.setPictureUrl(pictureUrl);
