@@ -33,10 +33,14 @@ public class UserService implements IUserService {
       throw new AppError(HttpStatus.CONFLICT, "Email already in use");
     }
 
-    String encodedPassword = null;
-    if (request.getPassword() != null && !request.getPassword().isBlank()) {
-      encodedPassword = passwordEncoder.encode(request.getPassword());
+    String provider = request.getProvider();
+    if (provider == null || "LOCAL".equalsIgnoreCase(provider)) {
+      if (request.getPassword() == null || request.getPassword().isBlank()) {
+        throw new AppError(HttpStatus.BAD_REQUEST, "Password is required for LOCAL accounts");
+      }
     }
+
+    String encodedPassword = passwordEncoder.encode(request.getPassword());
 
     User user = new User(request.getEmail(), request.getUsername(), encodedPassword);
 
