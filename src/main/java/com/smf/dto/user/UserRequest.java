@@ -2,7 +2,6 @@ package com.smf.dto.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.util.Set;
 
 public class UserRequest {
@@ -11,10 +10,15 @@ public class UserRequest {
 
   @Email @NotBlank private String email;
 
-  @NotBlank private String password;
+  private String password;
 
-  // NEW: user can pick roles
-  @NotNull private Set<String> roles;
+  private Set<String> roles;
+
+  private String provider;
+
+  private String googleId;
+
+  private String pictureUrl;
 
   public UserRequest() {}
 
@@ -48,5 +52,29 @@ public class UserRequest {
 
   public void setRoles(Set<String> roles) {
     this.roles = roles;
+  }
+
+  public String getProvider() {
+    return provider;
+  }
+
+  public void setProvider(String provider) {
+    this.provider = provider;
+  }
+
+  public String getGoogleId() {
+    return googleId;
+  }
+
+  public void setGoogleId(String googleId) {
+    this.googleId = googleId;
+  }
+
+  public String getPictureUrl() {
+    return pictureUrl;
+  }
+
+  public void setPictureUrl(String pictureUrl) {
+    this.pictureUrl = pictureUrl;
   }
 }

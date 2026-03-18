@@ -75,7 +75,7 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
   public ResponseEntity<ApiResponse> handleMethodNotAllowed(
-      HttpRequestMethodNotAllowedException ex) {
+      HttpRequestMethodNotSupportedException ex) {
     return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
         .body(new ApiResponse(false, "Endpoint not found", null));
   }
