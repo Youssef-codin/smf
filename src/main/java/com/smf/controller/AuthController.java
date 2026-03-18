@@ -4,6 +4,7 @@ import com.smf.dto.api.ApiResponse;
 import com.smf.dto.auth.JwtResponse;
 import com.smf.dto.auth.LoginRequest;
 import com.smf.dto.auth.LogoutRequest;
+import com.smf.dto.auth.OAuthRequest;
 import com.smf.dto.auth.RefreshRequest;
 import com.smf.dto.auth.RegisterRequest;
 import com.smf.model.User;
@@ -44,5 +45,11 @@ public class AuthController {
   public ResponseEntity<ApiResponse> logout(@Valid @RequestBody LogoutRequest req) {
     authService.logout(req.refreshToken());
     return ResponseEntity.ok(new ApiResponse(true, "Logged out successfully", null));
+  }
+
+  @PostMapping("/google")
+  public ResponseEntity<ApiResponse> googleSignIn(@Valid @RequestBody OAuthRequest req) {
+    JwtResponse jwtResponse = authService.googleSignIn(req.idToken());
+    return ResponseEntity.ok(new ApiResponse(true, "Signed in with Google.", jwtResponse));
   }
 }

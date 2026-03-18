@@ -11,6 +11,7 @@ import com.smf.util.AppError;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +39,12 @@ public class AuthService implements IAuthService {
 
   @Value("${jwt.refresh.expiration:1209600000}")
   private long refreshTokenExpiryMs;
+
+  @Value("${google.jwks-uri}")
+  private String googleJwksUri;
+
+  @Value("${google.client-ids}")
+  private List<String> googleClientIds;
 
   private String generateRefreshToken(User user) {
     String refreshTokenId = UUID.randomUUID().toString();
@@ -131,5 +142,53 @@ public class AuthService implements IAuthService {
     user.setRefreshTokenExpiry(null);
     userRepo.save(user);
   }
-}
 
+  @Override
+  @Transactional
+  public JwtResponse googleSignIn(String idToken) {
+    // 1. Verify the Google ID token against Google's JWKS
+    JwtDecoder decoder = googleJwtDecoder();
+    Jwt jwt;
+    try {
+      jwt = decoder.decode(idToken);
+    } catch (JwtException e) {
+      throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid Google ID token");
+    }
+
+    // 2. Validate audience matches one of our allowed client IDs
+    List<String> audiences = jwt.getAudience();
+    if (audiences == null || audiences.stream().noneMatch(googleClientIds::contains)) {
+      throw new AppError(HttpStatus.UNAUTHORIZED, "Google ID token audience mismatch");
+    }
+
+    // 3. Extract claims
+    String googleId = jwt.getSubject();
+    String email = jwt.getClaimAsString("email");
+    String name = jwt.getClaimAsString("name");
+    String pictureUrl = jwt.getClaimAsString("picture");
+
+    // 4. Find by Google ID first (returning user)
+    User user = userRepo.findByGoogleId(googleId).orElseGet(() -> {
+      // 5. Try to link an existing local account by email, or create new one
+      User u = userRepo.findByEmail(email).orElseGet(() -> {
+        User newUser = new User(email, name != null ? name : email, null);
+        newUser.setProvider("GOOGLE");
+        return newUser;
+      });
+      u.setGoogleId(googleId);
+      u.setProvider("GOOGLE");
+      return u;
+    });
+
+    // Always keep the profile picture fresh
+    user.setPictureUrl(pictureUrl);
+    userRepo.save(user);
+
+    return generateTokens(user);
+  }
+
+  /** Protected to allow overriding in tests without hitting Google's JWKS endpoint. */
+  protected JwtDecoder googleJwtDecoder() {
+    return NimbusJwtDecoder.withJwkSetUri(googleJwksUri).build();
+  }
+}

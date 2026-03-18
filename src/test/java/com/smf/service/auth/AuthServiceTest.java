@@ -2,6 +2,7 @@ package com.smf.service.auth;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 import com.smf.dto.auth.JwtResponse;
@@ -13,6 +14,7 @@ import com.smf.security.AppUserDetails;
 import com.smf.security.JwtUtils;
 import com.smf.util.AppError;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +28,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -47,6 +52,8 @@ class AuthServiceTest {
     user = new User("test@mail.com", "testUser", "encodedPass");
     user.setId(UUID.randomUUID());
   }
+
+  // ─── Existing tests (unchanged) ────────────────────────────────────────────
 
   @Test
   void register_shouldCreateUser_whenEmailNotExists() {
@@ -82,7 +89,6 @@ class AuthServiceTest {
     Authentication authentication = mock(Authentication.class);
     AppUserDetails userDetails = mock(AppUserDetails.class);
 
-  
     lenient().when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(authentication);
 
@@ -98,7 +104,7 @@ class AuthServiceTest {
     assertNotNull(response);
     assertEquals("mocked-jwt", response.accessToken());
     assertNotNull(response.refreshToken());
-verify(userRepo, times(1)).save(any(User.class)); // refresh token save
+    verify(userRepo, times(1)).save(any(User.class)); // refresh token save
   }
 
   @Test
@@ -298,5 +304,154 @@ verify(userRepo, times(1)).save(any(User.class)); // refresh token save
 
     assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
     assertEquals("Invalid refresh token", exception.getMessage());
+  }
+
+  // ─── Google Sign-In tests ──────────────────────────────────────────────────
+
+  /** Subclass that lets tests inject a mock JwtDecoder instead of hitting Google's JWKS. */
+  static class TestableAuthService extends AuthService {
+    private final JwtDecoder mockDecoder;
+
+    TestableAuthService(UserRepository userRepo, BCryptPasswordEncoder enc,
+        AuthenticationManager authManager, JwtUtils jwtUtils, JwtDecoder mockDecoder) {
+      super(userRepo, enc, authManager, jwtUtils);
+      this.mockDecoder = mockDecoder;
+    }
+
+    @Override
+    protected JwtDecoder googleJwtDecoder() {
+      return mockDecoder;
+    }
+  }
+
+  private Jwt buildGoogleJwt(String subject, String email, String name, String picture,
+      String clientId) {
+    return Jwt.withTokenValue("fake-token")
+        .header("alg", "RS256")
+        .subject(subject)
+        .audience(List.of(clientId))
+        .claim("email", email)
+        .claim("name", name)
+        .claim("picture", picture)
+        .issuedAt(java.time.Instant.now())
+        .expiresAt(java.time.Instant.now().plusSeconds(3600))
+        .build();
+  }
+
+  @Test
+  void googleSignIn_shouldCreateNewUser_whenGoogleIdNotExists() {
+    String googleId = "google-sub-123";
+    String clientId = "test-client-id.apps.googleusercontent.com";
+    Jwt jwt = buildGoogleJwt(googleId, "new@google.com", "New User", "https://pic.url", clientId);
+
+    JwtDecoder mockDecoder = mock(JwtDecoder.class);
+    when(mockDecoder.decode(anyString())).thenReturn(jwt);
+
+    TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
+    // Inject the client-id field via reflection
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIds", List.of(clientId));
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "refreshTokenExpiryMs", 1209600000L);
+
+    when(userRepo.findByGoogleId(googleId)).thenReturn(Optional.empty());
+    when(userRepo.findByEmail("new@google.com")).thenReturn(Optional.empty());
+    when(userRepo.save(any(User.class))).thenAnswer(inv -> {
+      User u = inv.getArgument(0);
+      u.setId(UUID.randomUUID());
+      return u;
+    });
+    when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("jwt-token");
+
+    JwtResponse response = svc.googleSignIn("fake-token");
+
+    assertNotNull(response);
+    assertEquals("jwt-token", response.accessToken());
+    verify(userRepo, atLeastOnce()).save(any(User.class));
+  }
+
+  @Test
+  void googleSignIn_shouldReturnExistingUser_whenGoogleIdExists() {
+    String googleId = "google-sub-456";
+    String clientId = "test-client-id.apps.googleusercontent.com";
+    Jwt jwt = buildGoogleJwt(googleId, "existing@google.com", "Existing User", "https://pic.url", clientId);
+
+    JwtDecoder mockDecoder = mock(JwtDecoder.class);
+    when(mockDecoder.decode(anyString())).thenReturn(jwt);
+
+    User existingUser = new User("existing@google.com", "Existing User", null);
+    existingUser.setId(UUID.randomUUID());
+    existingUser.setGoogleId(googleId);
+    existingUser.setProvider("GOOGLE");
+
+    TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIds", List.of(clientId));
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "refreshTokenExpiryMs", 1209600000L);
+
+    when(userRepo.findByGoogleId(googleId)).thenReturn(Optional.of(existingUser));
+    when(userRepo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("jwt-token");
+
+    JwtResponse response = svc.googleSignIn("fake-token");
+
+    assertNotNull(response);
+    verify(userRepo, never()).findByEmail(anyString());
+  }
+
+  @Test
+  void googleSignIn_shouldLinkExistingLocalAccount_whenEmailMatches() {
+    String googleId = "google-sub-789";
+    String clientId = "test-client-id.apps.googleusercontent.com";
+    Jwt jwt = buildGoogleJwt(googleId, "local@app.com", "Local User", "https://pic.url", clientId);
+
+    JwtDecoder mockDecoder = mock(JwtDecoder.class);
+    when(mockDecoder.decode(anyString())).thenReturn(jwt);
+
+    User localUser = new User("local@app.com", "Local User", "hashed-password");
+    localUser.setId(UUID.randomUUID());
+
+    TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIds", List.of(clientId));
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "refreshTokenExpiryMs", 1209600000L);
+
+    when(userRepo.findByGoogleId(googleId)).thenReturn(Optional.empty());
+    when(userRepo.findByEmail("local@app.com")).thenReturn(Optional.of(localUser));
+    when(userRepo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("jwt-token");
+
+    JwtResponse response = svc.googleSignIn("fake-token");
+
+    assertNotNull(response);
+    assertEquals("GOOGLE", localUser.getProvider());
+    assertEquals(googleId, localUser.getGoogleId());
+  }
+
+  @Test
+  void googleSignIn_shouldThrow_whenTokenInvalid() {
+    JwtDecoder mockDecoder = mock(JwtDecoder.class);
+    when(mockDecoder.decode(anyString())).thenThrow(new JwtException("bad token"));
+
+    TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIds", List.of("some-client-id"));
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "refreshTokenExpiryMs", 1209600000L);
+
+    AppError ex = assertThrows(AppError.class, () -> svc.googleSignIn("bad-token"));
+    assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+    assertEquals("Invalid Google ID token", ex.getMessage());
+  }
+
+  @Test
+  void googleSignIn_shouldThrow_whenAudienceMismatch() {
+    String clientId = "correct-client-id.apps.googleusercontent.com";
+    Jwt jwt = buildGoogleJwt("sub", "user@google.com", "User", "https://pic.url", "wrong-client-id");
+
+    JwtDecoder mockDecoder = mock(JwtDecoder.class);
+    when(mockDecoder.decode(anyString())).thenReturn(jwt);
+
+    TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIds", List.of(clientId));
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "refreshTokenExpiryMs", 1209600000L);
+
+    AppError ex = assertThrows(AppError.class, () -> svc.googleSignIn("fake-token"));
+    assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+    assertEquals("Google ID token audience mismatch", ex.getMessage());
   }
 }
