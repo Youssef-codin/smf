@@ -13,6 +13,9 @@ import com.smf.repo.UserRepository;
 import com.smf.security.AppUserDetails;
 import com.smf.security.JwtUtils;
 import com.smf.util.AppError;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -133,11 +136,10 @@ class AuthServiceTest {
     String tokenId = UUID.randomUUID().toString();
     String refreshToken = tokenId + ".abc123";
     user.setRefreshTokenId(tokenId);
-    user.setRefreshTokenHash("hashedToken");
+    user.setRefreshTokenHash(sha256Hash(refreshToken));
     user.setRefreshTokenExpiry(LocalDateTime.now().plusHours(1));
 
     when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches(refreshToken, "hashedToken")).thenReturn(true);
     when(userRepo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
     when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("new-jwt");
 
@@ -224,11 +226,10 @@ class AuthServiceTest {
     String tokenId = UUID.randomUUID().toString();
     String refreshToken = tokenId + ".abc123";
     user.setRefreshTokenId(tokenId);
-    user.setRefreshTokenHash("hashedToken");
+    user.setRefreshTokenHash("wrong-hash");
     user.setRefreshTokenExpiry(LocalDateTime.now().plusHours(1));
 
     when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches(refreshToken, "hashedToken")).thenReturn(false);
 
     AppError exception = assertThrows(AppError.class, () -> authService.refresh(refreshToken));
 
@@ -241,10 +242,9 @@ class AuthServiceTest {
     String tokenId = UUID.randomUUID().toString();
     String refreshToken = tokenId + ".abc123";
     user.setRefreshTokenId(tokenId);
-    user.setRefreshTokenHash("hashedToken");
+    user.setRefreshTokenHash(sha256Hash(refreshToken));
 
     when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches(refreshToken, "hashedToken")).thenReturn(true);
     when(userRepo.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
     assertDoesNotThrow(() -> authService.logout(refreshToken));
@@ -295,10 +295,9 @@ class AuthServiceTest {
     String tokenId = UUID.randomUUID().toString();
     String refreshToken = tokenId + ".abc123";
     user.setRefreshTokenId(tokenId);
-    user.setRefreshTokenHash("hashedToken");
+    user.setRefreshTokenHash("wrong-hash");
 
     when(userRepo.findByRefreshTokenId(tokenId)).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches(refreshToken, "hashedToken")).thenReturn(false);
 
     AppError exception = assertThrows(AppError.class, () -> authService.logout(refreshToken));
 
@@ -338,6 +337,22 @@ class AuthServiceTest {
         .build();
   }
 
+  private String sha256Hash(String input) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+      StringBuilder hexString = new StringBuilder();
+      for (byte b : hash) {
+        String hex = Integer.toHexString(0xff & b);
+        if (hex.length() == 1) hexString.append('0');
+        hexString.append(hex);
+      }
+      return hexString.toString();
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException("SHA-256 not available", e);
+    }
+  }
+
   @Test
   void googleSignIn_shouldCreateNewUser_whenGoogleIdNotExists() {
     String googleId = "google-sub-123";
@@ -349,7 +364,9 @@ class AuthServiceTest {
 
     TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
     // Inject the client-id field via reflection
-    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIds", List.of(clientId));
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdWeb", clientId);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdAndroid", clientId);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdIos", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "refreshTokenExpiryMs", 1209600000L);
 
     when(userRepo.findByGoogleId(googleId)).thenReturn(Optional.empty());
@@ -383,7 +400,9 @@ class AuthServiceTest {
     existingUser.setProvider("GOOGLE");
 
     TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
-    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIds", List.of(clientId));
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdWeb", clientId);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdAndroid", clientId);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdIos", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "refreshTokenExpiryMs", 1209600000L);
 
     when(userRepo.findByGoogleId(googleId)).thenReturn(Optional.of(existingUser));
@@ -409,7 +428,9 @@ class AuthServiceTest {
     localUser.setId(UUID.randomUUID());
 
     TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
-    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIds", List.of(clientId));
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdWeb", clientId);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdAndroid", clientId);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdIos", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "refreshTokenExpiryMs", 1209600000L);
 
     when(userRepo.findByGoogleId(googleId)).thenReturn(Optional.empty());
@@ -430,7 +451,9 @@ class AuthServiceTest {
     when(mockDecoder.decode(anyString())).thenThrow(new JwtException("bad token"));
 
     TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
-    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIds", List.of("some-client-id"));
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdWeb", "some-client-id");
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdAndroid", "some-client-id");
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdIos", "some-client-id");
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "refreshTokenExpiryMs", 1209600000L);
 
     AppError ex = assertThrows(AppError.class, () -> svc.googleSignIn("bad-token"));
@@ -447,7 +470,9 @@ class AuthServiceTest {
     when(mockDecoder.decode(anyString())).thenReturn(jwt);
 
     TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
-    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIds", List.of(clientId));
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdWeb", clientId);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdAndroid", clientId);
+    org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdIos", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "refreshTokenExpiryMs", 1209600000L);
 
     AppError ex = assertThrows(AppError.class, () -> svc.googleSignIn("fake-token"));

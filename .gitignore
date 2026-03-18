@@ -34,3 +34,6 @@ build/
 
 ### Bruno ###
 docs/bruno/
+
+### Environment ###
+.env
