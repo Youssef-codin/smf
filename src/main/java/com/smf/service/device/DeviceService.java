@@ -164,6 +164,7 @@ public class DeviceService implements IDeviceService {
         device.getLastLocationLon(),
         device.getLastSeenTimestamp(),
         device.getStatus(),
-        device.getViolationCount());
+        device.getViolationCount() != null ? device.getViolationCount() : 0);
   }
 }
+
