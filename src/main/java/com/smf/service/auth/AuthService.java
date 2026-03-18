@@ -55,6 +55,8 @@ public class AuthService implements IAuthService {
   @Value("${google.client-id-ios}")
   private String googleClientIdIos;
 
+  private volatile JwtDecoder cachedJwtDecoder;
+
   private String sha256Hash(String input) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -194,19 +196,39 @@ public class AuthService implements IAuthService {
       throw new AppError(HttpStatus.UNAUTHORIZED, "Google ID token audience mismatch");
     }
 
-    // 3. Extract claims
+    // 3. Validate issuer
+    String issuer = jwt.getIssuer().toString();
+    if (!"https://accounts.google.com".equals(issuer) && !"accounts.google.com".equals(issuer)) {
+      throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid Google ID token issuer");
+    }
+
+    // 4. Validate email_verified claim
+    Boolean emailVerified = jwt.getClaimAsBoolean("email_verified");
+    if (!Boolean.TRUE.equals(emailVerified)) {
+      throw new AppError(HttpStatus.UNAUTHORIZED, "Google email not verified");
+    }
+
+    // 5. Extract and validate claims
     String googleId = jwt.getSubject();
     String email = jwt.getClaimAsString("email");
+
+    if (googleId == null || googleId.isBlank()) {
+      throw new AppError(HttpStatus.UNAUTHORIZED, "Google ID token missing subject");
+    }
+    if (email == null || email.isBlank()) {
+      throw new AppError(HttpStatus.UNAUTHORIZED, "Google ID token missing email");
+    }
+
     String name = jwt.getClaimAsString("name");
     String pictureUrl = jwt.getClaimAsString("picture");
 
-    // 4. Find by Google ID first (returning user)
+    // 6. Find by Google ID first (returning user)
     User user =
         userRepo
             .findByGoogleId(googleId)
             .orElseGet(
                 () -> {
-                  // 5. Try to link an existing local account by email, or create new one
+                  // 7. Try to link an existing local account by email, or create new one
                   User u =
                       userRepo
                           .findByEmail(email)
@@ -228,8 +250,15 @@ public class AuthService implements IAuthService {
     return generateTokens(user);
   }
 
-  /** Protected to allow overriding in tests without hitting Google's JWKS endpoint. */
+  /** Returns a cached JwtDecoder that reuses Google's JWKS via its internal cache. */
   protected JwtDecoder googleJwtDecoder() {
-    return NimbusJwtDecoder.withJwkSetUri(googleJwksUri).build();
+    if (cachedJwtDecoder == null) {
+      synchronized (this) {
+        if (cachedJwtDecoder == null) {
+          cachedJwtDecoder = NimbusJwtDecoder.withJwkSetUri(googleJwksUri).build();
+        }
+      }
+    }
+    return cachedJwtDecoder;
   }
 }
