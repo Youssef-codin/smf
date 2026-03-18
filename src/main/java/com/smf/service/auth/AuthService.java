@@ -3,10 +3,12 @@ package com.smf.service.auth;
 import com.smf.dto.auth.JwtResponse;
 import com.smf.dto.auth.LoginRequest;
 import com.smf.dto.auth.RegisterRequest;
+import com.smf.model.Role;
 import com.smf.model.User;
 import com.smf.repo.UserRepository;
 import com.smf.security.AppUserDetails;
 import com.smf.security.JwtUtils;
+import com.smf.service.role.IRoleService;
 import com.smf.util.AppError;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -14,7 +16,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService implements IAuthService {
 
   private final UserRepository userRepo;
+  private final IRoleService roleService;
   private final BCryptPasswordEncoder passwordEncoder;
   private final AuthenticationManager authManager;
   private final JwtUtils jwtUtils;
@@ -120,6 +125,8 @@ public class AuthService implements IAuthService {
     if (alreadyExist) throw new AppError(HttpStatus.CONFLICT, "Email Already Used");
 
     User newUser = new User(req.email(), req.username(), passwordEncoder.encode(req.password()));
+    Role defaultRole = roleService.findRoleByName("ROLE_USER");
+    newUser.getRoles().add(defaultRole);
 
     User savedUser = userRepo.save(newUser);
     return savedUser;
@@ -236,6 +243,8 @@ public class AuthService implements IAuthService {
                               () -> {
                                 User newUser = new User(email, name != null ? name : email, null);
                                 newUser.setProvider("GOOGLE");
+                                Role defaultRole = roleService.findRoleByName("ROLE_USER");
+                                newUser.getRoles().add(defaultRole);
                                 return newUser;
                               });
                   if (u.getGoogleId() != null && !u.getGoogleId().equals(googleId)) {
