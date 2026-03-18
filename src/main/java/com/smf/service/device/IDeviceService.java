@@ -25,5 +25,5 @@ public interface IDeviceService {
 
   Device findDeviceById(UUID deviceId);
 
-  void incrementViolationCount(String macAddress);
+  int incrementViolationCount(String macAddress);
 }

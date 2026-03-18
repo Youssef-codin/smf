@@ -151,8 +151,8 @@ public class DeviceService implements IDeviceService {
 
   @Override
   @Transactional
-  public void incrementViolationCount(String macAddress) {
-    deviceRepository.incrementViolationCount(macAddress);
+  public int incrementViolationCount(String macAddress) {
+    return deviceRepository.incrementViolationCount(macAddress);
   }
 
   private DeviceResponse mapToDeviceResponse(Device device) {

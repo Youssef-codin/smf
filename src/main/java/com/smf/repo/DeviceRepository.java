@@ -14,7 +14,7 @@ public interface DeviceRepository extends JpaRepository<Device, UUID> {
 
 	Optional<Device> findByMacAddress(String macAddress);
 
-  @Modifying
-  @Query("UPDATE Device d SET d.violationCount = d.violationCount + 1 WHERE d.macAddress = :macAddress")
-  void incrementViolationCount(@Param("macAddress") String macAddress);
+@Modifying
+  @Query(value = "UPDATE devices SET violation_count = COALESCE(violation_count, 0) + 1 WHERE mac_address = :macAddress", nativeQuery = true)
+  int incrementViolationCount(@Param("macAddress") String macAddress);
 }
