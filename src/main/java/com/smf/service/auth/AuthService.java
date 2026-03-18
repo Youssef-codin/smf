@@ -238,6 +238,10 @@ public class AuthService implements IAuthService {
                                 newUser.setProvider("GOOGLE");
                                 return newUser;
                               });
+                  if (u.getGoogleId() != null && !u.getGoogleId().equals(googleId)) {
+                    throw new AppError(
+                        HttpStatus.CONFLICT, "Email is already linked to another Google account");
+                  }
                   u.setGoogleId(googleId);
                   u.setProvider("GOOGLE");
                   return u;

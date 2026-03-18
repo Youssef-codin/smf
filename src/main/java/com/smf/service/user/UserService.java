@@ -33,21 +33,32 @@ public class UserService implements IUserService {
       throw new AppError(HttpStatus.CONFLICT, "Email already in use");
     }
 
-    User user =
-        new User(
-            request.getEmail(),
-            request.getUsername(),
-            passwordEncoder.encode(request.getPassword()));
+    String encodedPassword = null;
+    if (request.getPassword() != null && !request.getPassword().isBlank()) {
+      encodedPassword = passwordEncoder.encode(request.getPassword());
+    }
+
+    User user = new User(request.getEmail(), request.getUsername(), encodedPassword);
+
+    if (request.getProvider() != null) {
+      user.setProvider(request.getProvider());
+    }
+    if (request.getGoogleId() != null) {
+      user.setGoogleId(request.getGoogleId());
+    }
+    if (request.getPictureUrl() != null) {
+      user.setPictureUrl(request.getPictureUrl());
+    }
 
     Set<Role> roles = new HashSet<>();
-    if (request.getRoles() == null || request.getRoles().isEmpty()) {
-      Role userRole = roleService.findRoleByName("ROLE_USER");
-      roles.add(userRole);
-    } else {
+    if (request.getRoles() != null && !request.getRoles().isEmpty()) {
       for (String roleName : request.getRoles()) {
         Role role = roleService.findRoleByName(roleName);
         roles.add(role);
       }
+    } else {
+      Role userRole = roleService.findRoleByName("ROLE_USER");
+      roles.add(userRole);
     }
     user.setRoles(roles);
 
@@ -84,7 +95,23 @@ public class UserService implements IUserService {
 
     user.setUsername(request.getUsername());
     user.setEmail(request.getEmail());
-    user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+    if (request.getPassword() != null && !request.getPassword().isBlank()) {
+      user.setPassword(passwordEncoder.encode(request.getPassword()));
+    }
+
+    if (request.getPictureUrl() != null) {
+      user.setPictureUrl(request.getPictureUrl());
+    }
+
+    if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+      Set<Role> roles = new HashSet<>();
+      for (String roleName : request.getRoles()) {
+        Role role = roleService.findRoleByName(roleName);
+        roles.add(role);
+      }
+      user.setRoles(roles);
+    }
 
     user = userRepository.save(user);
     return mapToResponse(user);
@@ -107,7 +134,11 @@ public class UserService implements IUserService {
   }
 
   private UserResponse mapToResponse(User user) {
-    return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
+    UserResponse response = new UserResponse(user.getId(), user.getUsername(), user.getEmail());
+    response.setProvider(user.getProvider());
+    response.setPictureUrl(user.getPictureUrl());
+    response.setRoles(user.getRoles().stream().map(r -> r.getRoleName()).collect(java.util.stream.Collectors.toSet()));
+    return response;
   }
 }
 
