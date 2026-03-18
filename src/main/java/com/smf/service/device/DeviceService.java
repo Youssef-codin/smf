@@ -149,6 +149,12 @@ public class DeviceService implements IDeviceService {
         .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not found"));
   }
 
+  @Override
+  @Transactional
+  public void incrementViolationCount(String macAddress) {
+    deviceRepository.incrementViolationCount(macAddress);
+  }
+
   private DeviceResponse mapToDeviceResponse(Device device) {
     return new DeviceResponse(
         device.getId(),
@@ -157,6 +163,7 @@ public class DeviceService implements IDeviceService {
         device.getLastLocationLat(),
         device.getLastLocationLon(),
         device.getLastSeenTimestamp(),
-        device.getStatus());
+        device.getStatus(),
+        device.getViolationCount());
   }
 }
