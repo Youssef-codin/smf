@@ -8,10 +8,12 @@ import static org.mockito.Mockito.*;
 import com.smf.dto.auth.JwtResponse;
 import com.smf.dto.auth.LoginRequest;
 import com.smf.dto.auth.RegisterRequest;
+import com.smf.model.Role;
 import com.smf.model.User;
 import com.smf.repo.UserRepository;
 import com.smf.security.AppUserDetails;
 import com.smf.security.JwtUtils;
+import com.smf.service.role.IRoleService;
 import com.smf.util.AppError;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -45,6 +47,8 @@ class AuthServiceTest {
   @Mock private AuthenticationManager authManager;
 
   @Mock private JwtUtils jwtUtils;
+
+  @Mock private IRoleService roleService;
 
   @InjectMocks private AuthService authService;
 
@@ -311,9 +315,9 @@ class AuthServiceTest {
   static class TestableAuthService extends AuthService {
     private final JwtDecoder mockDecoder;
 
-    TestableAuthService(UserRepository userRepo, BCryptPasswordEncoder enc,
+    TestableAuthService(UserRepository userRepo, IRoleService roleService, BCryptPasswordEncoder enc,
         AuthenticationManager authManager, JwtUtils jwtUtils, JwtDecoder mockDecoder) {
-      super(userRepo, enc, authManager, jwtUtils);
+      super(userRepo, roleService, enc, authManager, jwtUtils);
       this.mockDecoder = mockDecoder;
     }
 
@@ -364,7 +368,7 @@ class AuthServiceTest {
     JwtDecoder mockDecoder = mock(JwtDecoder.class);
     when(mockDecoder.decode(anyString())).thenReturn(jwt);
 
-    TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
+    TestableAuthService svc = new TestableAuthService(userRepo, roleService, passwordEncoder, authManager, jwtUtils, mockDecoder);
     // Inject the client-id field via reflection
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdWeb", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdAndroid", clientId);
@@ -378,6 +382,7 @@ class AuthServiceTest {
       u.setId(UUID.randomUUID());
       return u;
     });
+    when(roleService.findRoleByName("ROLE_USER")).thenReturn(new Role("ROLE_USER"));
     when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("jwt-token");
 
     JwtResponse response = svc.googleSignIn("fake-token");
@@ -401,7 +406,7 @@ class AuthServiceTest {
     existingUser.setGoogleId(googleId);
     existingUser.setProvider("GOOGLE");
 
-    TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
+    TestableAuthService svc = new TestableAuthService(userRepo, roleService, passwordEncoder, authManager, jwtUtils, mockDecoder);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdWeb", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdAndroid", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdIos", clientId);
@@ -429,7 +434,7 @@ class AuthServiceTest {
     User localUser = new User("local@app.com", "Local User", "hashed-password");
     localUser.setId(UUID.randomUUID());
 
-    TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
+    TestableAuthService svc = new TestableAuthService(userRepo, roleService, passwordEncoder, authManager, jwtUtils, mockDecoder);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdWeb", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdAndroid", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdIos", clientId);
@@ -452,7 +457,7 @@ class AuthServiceTest {
     JwtDecoder mockDecoder = mock(JwtDecoder.class);
     when(mockDecoder.decode(anyString())).thenThrow(new JwtException("bad token"));
 
-    TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
+    TestableAuthService svc = new TestableAuthService(userRepo, roleService, passwordEncoder, authManager, jwtUtils, mockDecoder);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdWeb", "some-client-id");
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdAndroid", "some-client-id");
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdIos", "some-client-id");
@@ -471,7 +476,7 @@ class AuthServiceTest {
     JwtDecoder mockDecoder = mock(JwtDecoder.class);
     when(mockDecoder.decode(anyString())).thenReturn(jwt);
 
-    TestableAuthService svc = new TestableAuthService(userRepo, passwordEncoder, authManager, jwtUtils, mockDecoder);
+    TestableAuthService svc = new TestableAuthService(userRepo, roleService, passwordEncoder, authManager, jwtUtils, mockDecoder);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdWeb", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdAndroid", clientId);
     org.springframework.test.util.ReflectionTestUtils.setField(svc, "googleClientIdIos", clientId);
