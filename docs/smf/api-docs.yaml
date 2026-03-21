@@ -224,6 +224,35 @@ components:
           description: Google ID token
       required:
         - idToken
+    RefreshRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          description: Valid refresh token
+      required:
+        - refreshToken
+    LogoutRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token to invalidate
+      required:
+        - refreshToken
+    JwtResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User ID
+        accessToken:
+          type: string
+          description: New JWT access token
+        refreshToken:
+          type: string
+          description: New refresh token
 paths:
   /api/v1/zones/{id}:
     get:
@@ -918,6 +947,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - auth-controller
+      operationId: refreshTokens
+      summary: Refresh access tokens
+      description: Issues new access and refresh tokens using a valid refresh token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+        required: true
+      responses:
+        "200":
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+  /api/v1/auth/logout:
+    post:
+      tags:
+        - auth-controller
+      operationId: logout
+      summary: Logout user
+      description: Invalidates the refresh token to logout the user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+        required: true
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
   /api/v1/events/client:
     get:
       tags:
@@ -1016,7 +1085,84 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
         "409":
           description: Device with this MAC already exists
+    get:
+      tags:
+        - smf-device-controller
+      operationId: getAllSmfDevices
+      summary: Get all SMF devices
+      description: Retrieves all SMF devices from the factory registry. Requires ADMIN role.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Devices fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+  /api/v1/smfdevices/unregistered:
+    get:
+      tags:
+        - smf-device-controller
+      operationId: getUnregisteredSmfDevices
+      summary: Get unregistered SMF devices
+      description: Retrieves all unregistered SMF devices available for user registration. Requires ADMIN role.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Unregistered devices fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+  /api/v1/smfdevices/label/{label}:
+    get:
+      tags:
+        - smf-device-controller
+      operationId: getSmfDeviceByLabel
+      summary: Get SMF device by label
+      description: Retrieves a specific SMF device by its label. Requires ADMIN role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: label
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Label of the SMF device
+      responses:
+        "200":
+          description: Device fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
   /api/v1/smfdevices/{id}:
+    get:
+      tags:
+        - smf-device-controller
+      operationId: getSmfDeviceById
+      summary: Get SMF device by ID
+      description: Retrieves a specific SMF device by its UUID. Requires ADMIN role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the SMF device
+      responses:
+        "200":
+          description: Device fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     delete:
       tags:
         - smf-device-controller
