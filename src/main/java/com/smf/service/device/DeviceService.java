@@ -152,7 +152,11 @@ public class DeviceService implements IDeviceService {
   @Override
   @Transactional
   public int incrementViolationCount(String macAddress) {
-    return deviceRepository.incrementViolationCount(macAddress);
+    int updatedRows = deviceRepository.incrementViolationCount(macAddress);
+    if (updatedRows == 0) {
+      throw new AppError(HttpStatus.NOT_FOUND, "Device not found");
+    }
+    return updatedRows;
   }
 
   private DeviceResponse mapToDeviceResponse(Device device) {
