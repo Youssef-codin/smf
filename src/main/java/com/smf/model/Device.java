@@ -50,10 +50,14 @@ public class Device {
   @Enumerated(EnumType.STRING)
   private DeviceStatus status;
 
+  @Column(name = "violation_count")
+  private Integer violationCount = 0;
+
   public Device(User owner, Double lastLocationLat, Double lastLocationLon) {
     this.owner = owner;
     this.lastLocationLat = lastLocationLat;
     this.lastLocationLon = lastLocationLon;
     this.status = DeviceStatus.OFFLINE;
+    this.violationCount = 0;
   }
 }

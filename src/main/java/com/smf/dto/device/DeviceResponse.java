@@ -11,4 +11,5 @@ public record DeviceResponse(
     Double lastLocationLat,
     Double lastLocationLon,
     Timestamp lastSeenTimestamp,
-    DeviceStatus status) {}
+    DeviceStatus status,
+    Integer violationCount) {}

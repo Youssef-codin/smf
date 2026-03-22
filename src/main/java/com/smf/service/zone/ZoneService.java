@@ -234,6 +234,10 @@ public class ZoneService implements IZoneService {
 
     eventService.logZoneAccessEvent(result, macAddress);
 
+    if (!result.granted()) {
+      deviceService.incrementViolationCount(macAddress);
+    }
+
     return result;
   }
 }
