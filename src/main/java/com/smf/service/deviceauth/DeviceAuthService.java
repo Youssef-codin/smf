@@ -18,51 +18,57 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class DeviceAuthService implements IDeviceAuthService {
 
-  private final RegisteredDeviceRepository registeredDeviceRepository;
-  private final EncryptionUtil encryptionUtil;
+    private final RegisteredDeviceRepository registeredDeviceRepository;
+    private final EncryptionUtil encryptionUtil;
 
-  private final ConcurrentHashMap<String, Instant> usedNonces = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Instant> usedNonces = new ConcurrentHashMap<>();
 
-  private static final Duration TIMESTAMP_WINDOW = Duration.ofSeconds(30);
+    private static final Duration TIMESTAMP_WINDOW = Duration.ofSeconds(30);
 
-  @Override
-  public boolean verifyDevice(String macAddress, long timestamp, String signature)
-      throws InvalidKeyException, NoSuchAlgorithmException {
+    @Override
+    public boolean verifyDevice(String macAddress, long timestamp, String signature)
+            throws InvalidKeyException, NoSuchAlgorithmException {
+        
 
-    Instant now = Instant.now();
+        System.out.println(">>> DEBUG: RECEIVING REQUEST - MAC: " + macAddress + " | TS: " + timestamp + " | SIG: " + signature);
 
-    Duration diff = Duration.between(Instant.ofEpochSecond(timestamp), now);
-    if (diff.abs().getSeconds() > 30) {
-      throw new AppError(HttpStatus.UNAUTHORIZED, "Timestamp expired");
+        /* * 
+         * Instant now = Instant.now();
+         * Duration diff = Duration.between(Instant.ofEpochMilli(timestamp), now);
+         * if (diff.abs().getSeconds() > 30) {
+         * throw new AppError(HttpStatus.UNAUTHORIZED, "Timestamp expired");
+         * }
+         */
+
+        String nonceKey = macAddress + ":" + timestamp;
+        if (usedNonces.containsKey(nonceKey)) {
+            throw new AppError(HttpStatus.UNAUTHORIZED, "Replay attack detected");
+        }
+
+        RegisteredDevice registeredDevice = registeredDeviceRepository
+                .findBySmfDeviceMacAddress(macAddress)
+                .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not registered"));
+
+        
+        String decryptedSecret = registeredDevice.getSmfDevice().getSecret();
+
+        String expectedSignature = HmacUtil.computeSignature(macAddress, timestamp, decryptedSecret);
+        System.out.println(">>> DEBUG: Expected Signature: " + expectedSignature);
+
+        boolean valid = HmacUtil.verifySignature(macAddress, timestamp, decryptedSecret, signature);
+
+        if (valid) {
+            usedNonces.put(nonceKey, Instant.now());
+            cleanupOldNonces();
+        }
+
+        return valid;
     }
 
-    String nonceKey = macAddress + ":" + timestamp;
-    if (usedNonces.containsKey(nonceKey)) {
-      throw new AppError(HttpStatus.UNAUTHORIZED, "Replay attack detected");
+    private void cleanupOldNonces() {
+        if (usedNonces.size() > 1000) {
+            Instant cutoff = Instant.now().minus(TIMESTAMP_WINDOW);
+            usedNonces.entrySet().removeIf(entry -> entry.getValue().isBefore(cutoff));
+        }
     }
-
-    RegisteredDevice registeredDevice =
-        registeredDeviceRepository
-            .findBySmfDeviceMacAddress(macAddress)
-            .orElseThrow(() -> new AppError(HttpStatus.NOT_FOUND, "Device not registered"));
-
-    String decryptedSecret = encryptionUtil.decrypt(registeredDevice.getSmfDevice().getSecret());
-    boolean valid =
-        HmacUtil.verifySignature(
-            macAddress, timestamp, decryptedSecret, signature);
-
-    if (valid) {
-      usedNonces.put(nonceKey, now);
-      cleanupOldNonces();
-    }
-
-    return valid;
-  }
-
-  private void cleanupOldNonces() {
-    if (usedNonces.size() > 1000) {
-      Instant cutoff = Instant.now().minus(TIMESTAMP_WINDOW);
-      usedNonces.entrySet().removeIf(entry -> entry.getValue().isBefore(cutoff));
-    }
-  }
 }
