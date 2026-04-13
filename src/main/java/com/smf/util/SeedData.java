@@ -93,7 +93,11 @@ public class SeedData implements CommandLineRunner {
     // Seed devices in dev mode
     if (isDevMode) {
       seedTestDevices(adminUser, engineerUser, managerUser, workerUser);
-      seedSmfDevices();
+      seedSmfDevice(
+          adminUser,
+          "28:56:2F:4A:87:6C",
+          "smf device",
+          "f09a641e6ecc4539cd6dd2d255801de5de5e7994e7e0a8c131aa9afd5ef21749");
     }
   }
 
@@ -167,30 +171,34 @@ public class SeedData implements CommandLineRunner {
     }
   }
 
-  private void seedSmfDevices() {
-    seedSmfDevice(
-        "28:56:2F:4A:87:6C",
-        "smf device",
-        "f09a641e6ecc4539cd6dd2d255801de5de5e7994e7e0a8c131aa9afd5ef21749",
-        "00:11:22:33:44:AA");
-  }
-
   private void seedSmfDevice(
-      String macAddress, String label, String secret, String deviceMacAddress) {
-    if (smfDeviceRepository.findByLabel(label).isEmpty()) {
+      User owner, String macAddress, String label, String secret) {
+    if (deviceRepository.findByMacAddress(macAddress).isEmpty()) {
       System.out.println("Seeding SMF device: " + label + " (" + macAddress + ")");
-      SmfDevice smfDevice = new SmfDevice();
-      smfDevice.setMacAddress(macAddress);
-      smfDevice.setLabel(label);
-      smfDevice.setSecret(encryptionUtil.encrypt(secret));
-      smfDevice.setRegistered(true);
-      smfDeviceRepository.save(smfDevice);
+      Device device = new Device();
+      device.setMacAddress(macAddress);
+      device.setOwner(owner);
+      device.setLabel(label);
+      device.setSecret(encryptionUtil.encrypt(secret));
+      device.setRegistered(true);
+      device.setLastLocationLat(34.052235);
+      device.setLastLocationLon(-118.243683);
+      device.setLastSeenTimestamp(Timestamp.from(Instant.now()));
+      deviceRepository.save(device);
 
-      Device device = deviceRepository.findByMacAddress(deviceMacAddress).orElse(null);
-      if (device != null) {
-        RegisteredDevice regDevice = new RegisteredDevice(smfDevice, device);
-        registeredDeviceRepository.save(regDevice);
-        System.out.println("Linked SMF device to: " + deviceMacAddress);
+      if (smfDeviceRepository.findByMacAddress(macAddress).isEmpty()) {
+        SmfDevice smfDevice = new SmfDevice();
+        smfDevice.setMacAddress(macAddress);
+        smfDevice.setLabel(label);
+        smfDevice.setSecret(encryptionUtil.encrypt(secret));
+        smfDevice.setRegistered(true);
+        smfDeviceRepository.save(smfDevice);
+
+        Device existingDevice = deviceRepository.findByMacAddress(macAddress).orElse(null);
+        if (existingDevice != null) {
+          RegisteredDevice regDevice = new RegisteredDevice(smfDevice, existingDevice);
+          registeredDeviceRepository.save(regDevice);
+        }
       }
     }
   }

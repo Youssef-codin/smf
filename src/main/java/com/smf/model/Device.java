@@ -53,6 +53,15 @@ public class Device {
   @Column(name = "violation_count")
   private Integer violationCount = 0;
 
+  @Column(name = "label")
+  private String label;
+
+  @Column(name = "secret")
+  private String secret;
+
+  @Column(name = "is_registered", nullable = false)
+  private boolean isRegistered = false;
+
   public Device(User owner, Double lastLocationLat, Double lastLocationLon) {
     this.owner = owner;
     this.lastLocationLat = lastLocationLat;
