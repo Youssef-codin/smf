@@ -13,5 +13,7 @@ public interface SmfDeviceRepository extends JpaRepository<SmfDevice, UUID> {
 
   Optional<SmfDevice> findByLabel(String label);
 
+  Optional<SmfDevice> findByMacAddress(String macAddress);
+
   List<SmfDevice> findAllByIsRegisteredFalse();
 }

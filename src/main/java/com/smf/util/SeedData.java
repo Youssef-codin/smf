@@ -2,14 +2,19 @@ package com.smf.util;
 
 import com.smf.dto.auth.RegisterRequest;
 import com.smf.model.Device;
+import com.smf.model.RegisteredDevice;
 import com.smf.model.Role;
+import com.smf.model.SmfDevice;
 import com.smf.model.User;
 import com.smf.model.Zone;
 import com.smf.repo.DeviceRepository;
+import com.smf.repo.RegisteredDeviceRepository;
 import com.smf.repo.RoleRepository;
+import com.smf.repo.SmfDeviceRepository;
 import com.smf.repo.UserRepository;
 import com.smf.repo.ZoneRepository;
 import com.smf.service.auth.IAuthService;
+import com.smf.util.EncryptionUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -28,16 +33,22 @@ public class SeedData implements CommandLineRunner {
     private final UserRepository userRepository;
     private final DeviceRepository deviceRepository;
     private final ZoneRepository zoneRepository;
+    private final SmfDeviceRepository smfDeviceRepository;
+    private final RegisteredDeviceRepository registeredDeviceRepository;
+    private final EncryptionUtil encryptionUtil;
 
     @Value("${app.is-dev-mode:false}")
     private boolean isDevMode;
 
-    public SeedData(IAuthService authService, RoleRepository roleRepository, UserRepository userRepository, DeviceRepository deviceRepository, ZoneRepository zoneRepository) {
+    public SeedData(IAuthService authService, RoleRepository roleRepository, UserRepository userRepository, DeviceRepository deviceRepository, ZoneRepository zoneRepository, SmfDeviceRepository smfDeviceRepository, RegisteredDeviceRepository registeredDeviceRepository, EncryptionUtil encryptionUtil) {
         this.authService = authService;
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
         this.deviceRepository = deviceRepository;
         this.zoneRepository = zoneRepository;
+        this.smfDeviceRepository = smfDeviceRepository;
+        this.registeredDeviceRepository = registeredDeviceRepository;
+        this.encryptionUtil = encryptionUtil;
     }
 
     @Override
@@ -70,6 +81,7 @@ public class SeedData implements CommandLineRunner {
         // Seed devices in dev mode
         if (isDevMode) {
             seedTestDevices(adminUser, engineerUser, managerUser, workerUser);
+            seedSmfDevices();
         }
     }
 
@@ -135,6 +147,31 @@ public class SeedData implements CommandLineRunner {
             device.setLastLocationLon(-118.243683);
             device.setLastSeenTimestamp(Timestamp.from(Instant.now()));
             deviceRepository.save(device);
+        }
+    }
+
+    private void seedSmfDevices() {
+        seedSmfDevice("28:56:2F:4A:87:6C", "smf device",
+            "f09a641e6ecc4539cd6dd2d255801de5de5e7994e7e0a8c131aa9afd5ef21749",
+            "00:11:22:33:44:AA");
+    }
+
+    private void seedSmfDevice(String macAddress, String label, String secret, String deviceMacAddress) {
+        if (smfDeviceRepository.findByLabel(label).isEmpty()) {
+            System.out.println("Seeding SMF device: " + label + " (" + macAddress + ")");
+            SmfDevice smfDevice = new SmfDevice();
+            smfDevice.setMacAddress(macAddress);
+            smfDevice.setLabel(label);
+            smfDevice.setSecret(encryptionUtil.encrypt(secret));
+            smfDevice.setRegistered(true);
+            smfDeviceRepository.save(smfDevice);
+
+            Device device = deviceRepository.findByMacAddress(deviceMacAddress).orElse(null);
+            if (device != null) {
+                RegisteredDevice regDevice = new RegisteredDevice(smfDevice, device);
+                registeredDeviceRepository.save(regDevice);
+                System.out.println("Linked SMF device to: " + deviceMacAddress);
+            }
         }
     }
 }
