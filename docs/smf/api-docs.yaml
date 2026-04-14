@@ -828,9 +828,9 @@ paths:
     get:
       tags:
         - device-controller
-      operationId: getAllDevices
+      operationId: getAllDevices_1
       summary: Get all devices
-      description: Retrieves all devices in the system
+      description: Retrieves all registered devices in the system
       responses:
         "200":
           description: Devices retrieved successfully
@@ -1013,7 +1013,7 @@ paths:
   /api/v1/auth/isUser:
     get:
       tags:
-        - auth-controller
+        - dev-only-controller
       operationId: testUser
       summary: Check if user is authenticated
       description: Verifies if the current request has a valid user authentication
@@ -1027,7 +1027,7 @@ paths:
   /api/v1/auth/isAuthenticated:
     get:
       tags:
-        - auth-controller
+        - dev-only-controller
       operationId: testAuth
       summary: Check if request is authenticated
       description: Verifies if the current request is authenticated (user or device)
@@ -1041,7 +1041,7 @@ paths:
   /api/v1/auth/isAdmin:
     get:
       tags:
-        - auth-controller
+        - dev-only-controller
       operationId: testAdmin
       summary: Check if user is admin
       description: Verifies if the current authenticated user has admin privileges
@@ -1055,8 +1055,8 @@ paths:
   /api/v1/smfdevices/:
     post:
       tags:
-        - smf-device-controller
-      operationId: addSmfDevice
+        - dev-only-controller
+      operationId: addDevice
       summary: Add device to registry
       description: |
         Adds a new SMF device to the factory registry.
@@ -1088,7 +1088,7 @@ paths:
     get:
       tags:
         - smf-device-controller
-      operationId: getAllSmfDevices
+      operationId: getAllDevices
       summary: Get all SMF devices
       description: Retrieves all SMF devices from the factory registry. Requires ADMIN role.
       security:
@@ -1143,7 +1143,7 @@ paths:
     get:
       tags:
         - smf-device-controller
-      operationId: getSmfDeviceById
+      operationId: getDeviceById_1
       summary: Get SMF device by ID
       description: Retrieves a specific SMF device by its UUID. Requires ADMIN role.
       security:
@@ -1165,8 +1165,8 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
     delete:
       tags:
-        - smf-device-controller
-      operationId: removeSmfDevice
+        - dev-only-controller
+      operationId: removeDevice
       summary: Remove device from registry
       description: |
         Removes an SMF device from the factory registry.
