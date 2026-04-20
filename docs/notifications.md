@@ -84,8 +84,7 @@ In another terminal, trigger an event:
 ```bash
 curl -X POST http://localhost:8080/api/v1/events/device \
   -H "Content-Type: application/json" \
-  -H "X-Device-Mac: AA:BB:CC:DD:EE:FF" \
-  -d '{"eventType":"SOS_TRIGGERED"}'
+  -d '{"macAddress":"AA:BB:CC:DD:EE:FF","event":"SOS_TRIGGERED"}'
 ```
 
 You should see the notification in stompy.
@@ -124,11 +123,18 @@ void connectWebSocket(String jwtToken) {
     destination: '/topic/alerts',
     callback: (message) {
       final data = jsonDecode(message.body);
-      print('Notification: ${data['type']} from ${data['macAddress']}');
+      final type = data['type']; // SOS_ALERT, UNAUTHORIZED_ACCESS, etc.
+      final macAddress = data['macAddress'];
+      print('Notification: $type from $macAddress');
     },
   );
 }
 ```
+
+To trigger notifications:
+- Send POST to `/api/v1/events/device` with:
+  - `macAddress`: device MAC address
+  - `event`: `SOS_TRIGGERED`, `ACCESS_DENIED`, or `DEVICE_OFFLINE`
 
 ## Production Notes
 

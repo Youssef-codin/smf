@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
+    "axios": "^1.15.1",
+    "node-fetch": "^3.3.2",
+    "stomp-client": "^0.9.0",
+    "stompit": "^1.0.0"
+  }
+}
