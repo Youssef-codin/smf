@@ -24,7 +24,6 @@ public class NotificationMessage {
     UNAUTHORIZED_ACCESS,
     DEVICE_OFFLINE,
     DEVICE_ONLINE,
-    ZONE_ALERT
   }
 
   public static NotificationMessage fromEvent(
@@ -45,7 +44,6 @@ public class NotificationMessage {
       case UNAUTHORIZED_ACCESS -> "Unauthorized access attempt by device: " + macAddress;
       case DEVICE_OFFLINE -> "Device went offline: " + macAddress;
       case DEVICE_ONLINE -> "Device came online: " + macAddress;
-      case ZONE_ALERT -> "Zone alert for device: " + macAddress;
     };
   }
 }
