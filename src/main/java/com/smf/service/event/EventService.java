@@ -6,6 +6,7 @@ import com.smf.dto.zone.ZoneAccessResult;
 import com.smf.model.Event;
 import com.smf.model.enums.EventTypes;
 import com.smf.repo.EventRepository;
+import com.smf.service.notification.NotificationService;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class EventService implements IEventService {
 
   private final EventRepository eventRepo;
   private final ObjectMapper objectMapper;
+  private final NotificationService notificationService;
 
   @Override
   public List<Event> getEvents(int since) {
@@ -36,7 +38,9 @@ public class EventService implements IEventService {
 
   @Override
   public void handleDenied(String macAddress) {
-    eventRepo.save(new Event(EventTypes.ACCESS_DENIED, macAddress, "{}"));
+    Event event = eventRepo.save(new Event(EventTypes.ACCESS_DENIED, macAddress, "{}"));
+    notificationService.broadcastEvent(
+        event.getEventType(), event.getMacAddress(), event.getMetadata(), event.getId());
   }
 
   @Override
@@ -51,12 +55,16 @@ public class EventService implements IEventService {
 
   @Override
   public void handleSos(String macAddress) {
-    eventRepo.save(new Event(EventTypes.SOS_TRIGGERED, macAddress, "{}"));
+    Event event = eventRepo.save(new Event(EventTypes.SOS_TRIGGERED, macAddress, "{}"));
+    notificationService.broadcastEvent(
+        event.getEventType(), event.getMacAddress(), event.getMetadata(), event.getId());
   }
 
   @Override
   public void handleOffline(String macAddress) {
-    eventRepo.save(new Event(EventTypes.DEVICE_OFFLINE, macAddress, "{}"));
+    Event event = eventRepo.save(new Event(EventTypes.DEVICE_OFFLINE, macAddress, "{}"));
+    notificationService.broadcastEvent(
+        event.getEventType(), event.getMacAddress(), event.getMetadata(), event.getId());
   }
 
   @Override
@@ -70,6 +78,11 @@ public class EventService implements IEventService {
     metadata.set("zoneAllowedRoles", objectMapper.valueToTree(result.zoneAllowedRoles()));
 
     EventTypes eventType = result.granted() ? EventTypes.ACCESS_GRANTED : EventTypes.ACCESS_DENIED;
-    eventRepo.save(new Event(eventType, macAddress, metadata.toString()));
+    Event event = eventRepo.save(new Event(eventType, macAddress, metadata.toString()));
+
+    if (!result.granted()) {
+      notificationService.broadcastEvent(
+          event.getEventType(), event.getMacAddress(), event.getMetadata(), event.getId());
+    }
   }
 }
