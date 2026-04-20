@@ -5,6 +5,7 @@ import com.smf.dto.zone.ZoneAccessResult;
 import com.smf.model.Event;
 import com.smf.model.enums.EventTypes;
 import com.smf.repo.EventRepository;
+import com.smf.service.notification.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,12 +29,14 @@ class EventServiceTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private EventService eventService;
 
     @Test
     void getEvents_success() {
-
         when(eventRepo.findRecent(any(Instant.class)))
                 .thenReturn(List.of(new Event(EventTypes.TESTING,"mac","{}")));
 
@@ -44,7 +47,6 @@ class EventServiceTest {
 
     @Test
     void getAllEvents_success() {
-
         when(eventRepo.findAll())
                 .thenReturn(List.of(new Event(EventTypes.TESTING,"mac","{}")));
 
@@ -55,49 +57,49 @@ class EventServiceTest {
 
     @Test
     void handleTest_shouldSaveEvent() {
-
         eventService.handleTest("mac");
-
         verify(eventRepo).save(any(Event.class));
     }
 
     @Test
-    void handleDenied_shouldSaveEvent() {
+    void handleDenied_shouldSaveEventAndBroadcast() {
+        when(eventRepo.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
         eventService.handleDenied("mac");
 
         verify(eventRepo).save(any(Event.class));
+        verify(notificationService).broadcastEvent(eq(EventTypes.ACCESS_DENIED), anyString(), anyString(), any());
     }
 
     @Test
     void handleOnline_shouldSaveEvent() {
-
         eventService.handleOnline("mac");
-
         verify(eventRepo).save(any(Event.class));
     }
 
     @Test
     void handleGranted_shouldSaveEvent() {
-
         eventService.handleGranted("mac");
-
         verify(eventRepo).save(any(Event.class));
     }
 
     @Test
-    void handleOffline_shouldSaveEvent() {
+    void handleOffline_shouldSaveEventAndBroadcast() {
+        when(eventRepo.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
         eventService.handleOffline("mac");
 
         verify(eventRepo).save(any(Event.class));
+        verify(notificationService).broadcastEvent(eq(EventTypes.DEVICE_OFFLINE), anyString(), anyString(), any());
     }
 
     @Test
-    void handleSos_shouldSaveEvent() {
+    void handleSos_shouldSaveEventAndBroadcast() {
+        when(eventRepo.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
         eventService.handleSos("mac");
 
         verify(eventRepo).save(any(Event.class));
+        verify(notificationService).broadcastEvent(eq(EventTypes.SOS_TRIGGERED), anyString(), anyString(), any());
     }
 }
