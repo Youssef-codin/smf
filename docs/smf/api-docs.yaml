@@ -102,19 +102,48 @@ components:
           type: string
           minLength: 1
           description: UUID of the user who owns this device
-        lastLocationLat:
-          type: number
-          format: double
-          description: Last known latitude coordinate
-        lastLocationLon:
-          type: number
-          format: double
-          description: Last known longitude coordinate
+        zoneId:
+          type: string
+          format: uuid
+          description: UUID of the zone to assign the device to (optional)
       required:
-        - lastLocationLat
-        - lastLocationLon
         - ownerId
         - smfDeviceLabel
+    DeviceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID of the device
+        macAddress:
+          type: string
+          description: MAC address of the device
+        ownerId:
+          type: string
+          format: uuid
+          description: UUID of the device owner
+        zoneId:
+          type: string
+          format: uuid
+          description: UUID of the device's last zone (optional)
+        zoneName:
+          type: string
+          description: Name of the device's last zone (optional)
+        lastSeenTimestamp:
+          type: string
+          format: date-time
+          description: Last time the device was seen
+        status:
+          type: string
+          enum:
+            - ONLINE
+            - OFFLINE
+            - SOS
+          description: Current status of the device
+        violationCount:
+          type: integer
+          description: Number of violations recorded
     SmfDeviceRequest:
       type: object
       properties:
@@ -519,7 +548,7 @@ paths:
         - device-controller
       operationId: updateDevice
       summary: Update an existing device
-      description: Updates device information including label, owner, and location
+      description: Updates device information including label, owner, and zone
       parameters:
         - name: id
           in: path
@@ -539,8 +568,7 @@ paths:
                 value:
                   smfDeviceLabel: "Updated Device Label"
                   ownerId: "550e8400-e29b-41d4-a716-446655440000"
-                  lastLocationLat: 40.7128
-                  lastLocationLon: -74.0060
+                  zoneId: "550e8400-e29b-41d4-a716-446655440001"
         required: true
       responses:
         "200":
@@ -855,8 +883,7 @@ paths:
                 value:
                   smfDeviceLabel: "New Device"
                   ownerId: "550e8400-e29b-41d4-a716-446655440000"
-                  lastLocationLat: 40.7128
-                  lastLocationLon: -74.0060
+                  zoneId: "550e8400-e29b-41d4-a716-446655440001"
         required: true
       responses:
         "200":
