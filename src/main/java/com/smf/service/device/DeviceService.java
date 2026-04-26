@@ -36,7 +36,7 @@ public class DeviceService implements IDeviceService {
       ISmfDeviceService smfDeviceService,
       @Lazy IRegisteredDeviceService registeredDeviceService,
       IUserService userService,
-      IZoneService zoneService) {
+      @Lazy IZoneService zoneService) {
     this.deviceRepository = deviceRepository;
     this.smfDeviceService = smfDeviceService;
     this.registeredDeviceService = registeredDeviceService;
