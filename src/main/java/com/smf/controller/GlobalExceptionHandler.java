@@ -2,6 +2,7 @@ package com.smf.controller;
 
 import com.smf.dto.api.ApiResponse;
 import com.smf.util.AppError;
+import com.smf.util.RateLimitExceededException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.security.SignatureException;
 import java.util.stream.Collectors;
@@ -84,6 +85,12 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse> handleNotFound(NoResourceFoundException ex) {
     return ResponseEntity.status(HttpStatus.NOT_FOUND)
         .body(new ApiResponse(false, "Endpoint not found", null));
+  }
+
+  @ExceptionHandler(RateLimitExceededException.class)
+  public ResponseEntity<ApiResponse> handleRateLimit(RateLimitExceededException e) {
+    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+        .body(new ApiResponse(false, e.getMessage(), null));
   }
 
   @ExceptionHandler(Exception.class)

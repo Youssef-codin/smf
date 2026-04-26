@@ -100,6 +100,8 @@ class ZoneAccessIntegrationTest {
     Device device = new Device();
     device.setMacAddress(macAddress);
     device.setOwner(owner);
+    device.setLastLocationLat(0.0);
+    device.setLastLocationLon(0.0);
     device.setLastSeenTimestamp(new Timestamp(System.currentTimeMillis()));
     return deviceRepository.save(device);
   }

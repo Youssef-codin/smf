@@ -3,6 +3,8 @@ package com.smf.controller;
 import com.smf.dto.api.ApiResponse;
 import com.smf.dto.role.RoleRequest;
 import com.smf.dto.role.RoleResponse;
+import com.smf.security.RateLimit;
+import com.smf.security.RateLimitKeyType;
 import com.smf.service.role.IRoleService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -19,24 +21,28 @@ public class RoleController {
 
   private final IRoleService roleService;
 
+  @RateLimit(limit = 50, duration = 60, keyType = RateLimitKeyType.USER)
   @PostMapping("/")
   public ResponseEntity<ApiResponse> createRole(@Valid @RequestBody RoleRequest request) {
     RoleResponse response = roleService.createRole(request);
     return ResponseEntity.ok(new ApiResponse(true, "Role created successfully", response));
   }
 
+  @RateLimit(limit = 100, duration = 60, keyType = RateLimitKeyType.USER)
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse> getRole(@PathVariable Long id) {
     RoleResponse response = roleService.getRoleById(id);
     return ResponseEntity.ok(new ApiResponse(true, "Role fetched successfully", response));
   }
 
+  @RateLimit(limit = 100, duration = 60, keyType = RateLimitKeyType.USER)
   @GetMapping("/")
   public ResponseEntity<ApiResponse> getAllRoles() {
     List<RoleResponse> roles = roleService.getAllRoles();
     return ResponseEntity.ok(new ApiResponse(true, "Roles fetched successfully", roles));
   }
 
+  @RateLimit(limit = 50, duration = 60, keyType = RateLimitKeyType.USER)
   @PutMapping("/{id}")
   public ResponseEntity<ApiResponse> updateRole(
       @PathVariable Long id, @Valid @RequestBody RoleRequest request) {
@@ -45,6 +51,7 @@ public class RoleController {
     return ResponseEntity.ok(new ApiResponse(true, "Role updated successfully", response));
   }
 
+  @RateLimit(limit = 20, duration = 60, keyType = RateLimitKeyType.USER)
   @DeleteMapping("/{id}")
   public ResponseEntity<ApiResponse> deleteRole(@PathVariable Long id) {
     roleService.deleteRole(id);

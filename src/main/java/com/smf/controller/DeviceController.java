@@ -5,6 +5,8 @@ import com.smf.dto.device.DeviceRegisterRequest;
 import com.smf.dto.device.DeviceResponse;
 import com.smf.dto.zone.ZoneAccessResult;
 import com.smf.dto.zone.ZoneEntryRequest;
+import com.smf.security.RateLimit;
+import com.smf.security.RateLimitKeyType;
 import com.smf.service.device.IDeviceService;
 import com.smf.service.zone.IZoneService;
 import jakarta.validation.Valid;
@@ -24,6 +26,7 @@ public class DeviceController {
   private final IDeviceService deviceService;
   private final IZoneService zoneService;
 
+  @RateLimit(limit = 50, duration = 60, keyType = RateLimitKeyType.USER)
   @PreAuthorize("hasAuthority('ADMIN')")
   @PostMapping("/")
   public ResponseEntity<ApiResponse> registerDevice(
@@ -32,6 +35,7 @@ public class DeviceController {
     return ResponseEntity.ok(new ApiResponse(true, "Device registered successfully", response));
   }
 
+  @RateLimit(limit = 100, duration = 60, keyType = RateLimitKeyType.USER)
   @PreAuthorize("hasAuthority('ADMIN')")
   @GetMapping("/")
   public ResponseEntity<ApiResponse> getAllDevices() {
@@ -40,6 +44,7 @@ public class DeviceController {
     return ResponseEntity.ok(new ApiResponse(true, "Devices fetched successfully", devices));
   }
 
+  @RateLimit(limit = 100, duration = 60, keyType = RateLimitKeyType.USER)
   @PreAuthorize("hasAuthority('ADMIN')")
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse> getDeviceById(@PathVariable UUID id) {
@@ -48,6 +53,7 @@ public class DeviceController {
     return ResponseEntity.ok(new ApiResponse(true, "Device fetched successfully", device));
   }
 
+  @RateLimit(limit = 50, duration = 60, keyType = RateLimitKeyType.USER)
   @PreAuthorize("hasAuthority('ADMIN')")
   @PutMapping("/{id}")
   public ResponseEntity<ApiResponse> updateDevice(
@@ -57,6 +63,7 @@ public class DeviceController {
     return ResponseEntity.ok(new ApiResponse(true, "Device updated successfully", updated));
   }
 
+  @RateLimit(limit = 20, duration = 60, keyType = RateLimitKeyType.USER)
   @PreAuthorize("hasAuthority('ADMIN')")
   @DeleteMapping("/{id}")
   public ResponseEntity<ApiResponse> deleteDevice(@PathVariable UUID id) {
@@ -65,16 +72,13 @@ public class DeviceController {
     return ResponseEntity.ok(new ApiResponse(true, "Device deleted successfully", null));
   }
 
+  @RateLimit(limit = 30, duration = 60, keyType = RateLimitKeyType.DEVICE)
   @PreAuthorize("hasAuthority('DEVICE')")
   @PostMapping("/zone-entry")
   public ResponseEntity<ApiResponse> handleZoneEntry(
       @AuthenticationPrincipal String macAddress, @Valid @RequestBody ZoneEntryRequest request) {
 
     ZoneAccessResult result = zoneService.checkZoneAccess(macAddress, request);
-
-    if (result.granted() && result.zoneId() != null) {
-      deviceService.updateDeviceZone(macAddress, result.zoneId());
-    }
 
     return ResponseEntity.ok(
         new ApiResponse(

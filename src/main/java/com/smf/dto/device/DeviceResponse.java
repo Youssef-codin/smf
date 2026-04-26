@@ -8,8 +8,8 @@ public record DeviceResponse(
     UUID id,
     String macAddress,
     UUID ownerId,
-    UUID zoneId,
-    String zoneName,
+    Double lastLocationLat,
+    Double lastLocationLon,
     Timestamp lastSeenTimestamp,
     DeviceStatus status,
     Integer violationCount) {}

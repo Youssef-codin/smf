@@ -3,6 +3,8 @@ package com.smf.controller;
 import com.smf.dto.api.ApiResponse;
 import com.smf.dto.device.DeviceEventRequest;
 import com.smf.model.Event;
+import com.smf.security.RateLimit;
+import com.smf.security.RateLimitKeyType;
 import com.smf.service.event.IEventService;
 import jakarta.validation.constraints.Min;
 import java.util.List;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventController {
   private final IEventService service;
 
+  @RateLimit(limit = 60, duration = 60, keyType = RateLimitKeyType.USER)
   @PreAuthorize("hasAuthority('USER')")
   @GetMapping("/client")
   public ResponseEntity<ApiResponse> getEvents(
@@ -33,6 +36,7 @@ public class EventController {
     return ResponseEntity.ok(new ApiResponse(true, "Events fetched successfully", events));
   }
 
+  @RateLimit(limit = 100, duration = 60, keyType = RateLimitKeyType.DEVICE)
   @PostMapping("/device")
   public ResponseEntity<ApiResponse> event(@RequestBody @Validated DeviceEventRequest request) {
     switch (request.event()) {

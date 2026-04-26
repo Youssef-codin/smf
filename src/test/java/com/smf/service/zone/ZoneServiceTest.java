@@ -109,6 +109,8 @@ class ZoneServiceTest {
         device.setId(id);
         device.setOwner(owner);
         device.setMacAddress(UUID.randomUUID().toString());
+        device.setLastLocationLat(0.0);
+        device.setLastLocationLon(0.0);
         return device;
     }
 
