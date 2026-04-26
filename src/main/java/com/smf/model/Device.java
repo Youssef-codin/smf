@@ -38,11 +38,9 @@ public class Device {
   @JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
   private User owner;
 
-  @Column(name = "last_location_lat")
-  private Double lastLocationLat;
-
-  @Column(name = "last_location_lon")
-  private Double lastLocationLon;
+  @ManyToOne
+  @JoinColumn(name = "last_zone_id")
+  private Zone lastZone;
 
   @Column(name = "last_seen_timestamp", nullable = true)
   private Timestamp lastSeenTimestamp;
@@ -62,10 +60,8 @@ public class Device {
   @Column(name = "is_registered", nullable = false)
   private boolean isRegistered = false;
 
-  public Device(User owner, Double lastLocationLat, Double lastLocationLon) {
+  public Device(User owner) {
     this.owner = owner;
-    this.lastLocationLat = lastLocationLat;
-    this.lastLocationLon = lastLocationLon;
     this.status = DeviceStatus.OFFLINE;
     this.violationCount = 0;
   }
