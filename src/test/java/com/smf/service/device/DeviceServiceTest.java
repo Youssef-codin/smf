@@ -9,11 +9,13 @@ import com.smf.dto.device.DeviceResponse;
 import com.smf.dto.device.SmfDeviceResponse;
 import com.smf.model.Device;
 import com.smf.model.User;
+import com.smf.model.Zone;
 import com.smf.model.enums.DeviceStatus;
 import com.smf.repo.DeviceRepository;
 import com.smf.service.registereddevice.IRegisteredDeviceService;
 import com.smf.service.smfdevice.ISmfDeviceService;
 import com.smf.service.user.IUserService;
+import com.smf.service.zone.IZoneService;
 import com.smf.util.AppError;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,11 +38,15 @@ class DeviceServiceTest {
 
   @Mock private IUserService userService;
 
+  @Mock private IZoneService zoneService;
+
   @InjectMocks private DeviceService deviceService;
 
   private UUID ownerId;
   private UUID smfDeviceId;
+  private UUID zoneId;
   private User owner;
+  private Zone zone;
   private SmfDeviceResponse smfDeviceResponse;
   private DeviceRegisterRequest request;
 
@@ -48,9 +54,14 @@ class DeviceServiceTest {
   void setUp() {
     ownerId = UUID.randomUUID();
     smfDeviceId = UUID.randomUUID();
+    zoneId = UUID.randomUUID();
 
     owner = new User("owner@test.com", "owner", "password");
     owner.setId(ownerId);
+
+    zone = new Zone();
+    zone.setId(zoneId);
+    zone.setName("Test Zone");
 
     smfDeviceResponse =
         new SmfDeviceResponse(smfDeviceId, null, "device-label-001", false, null);
@@ -59,14 +70,14 @@ class DeviceServiceTest {
         new DeviceRegisterRequest(
             "device-label-001",
             ownerId.toString(),
-            10.0,
-            20.0);
+            zoneId);
   }
 
   @Test
   void registerDevice_success() {
     when(smfDeviceService.getByLabel("device-label-001")).thenReturn(smfDeviceResponse);
     when(userService.findUserById(ownerId)).thenReturn(owner);
+    when(zoneService.findZoneById(zoneId)).thenReturn(zone);
     when(deviceRepository.save(any(Device.class))).thenAnswer(invocation -> {
       Device d = invocation.getArgument(0);
       d.setId(UUID.randomUUID());
@@ -77,8 +88,8 @@ class DeviceServiceTest {
 
     assertNotNull(response);
     assertEquals(ownerId, response.ownerId());
-    assertEquals(10.0, response.lastLocationLat());
-    assertEquals(20.0, response.lastLocationLon());
+    assertEquals(zoneId, response.zoneId());
+    assertEquals("Test Zone", response.zoneName());
     verify(registeredDeviceService).registerDevice(eq(smfDeviceId), any(UUID.class));
   }
 
@@ -97,9 +108,10 @@ class DeviceServiceTest {
   @Test
   void getDeviceById_success() {
     UUID deviceId = UUID.randomUUID();
-    Device device = new Device(owner, 10.0, 20.0);
+    Device device = new Device(owner);
     device.setId(deviceId);
     device.setMacAddress("AA:BB:CC:DD:EE:FF");
+    device.setLastZone(zone);
 
     when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
 
@@ -107,6 +119,8 @@ class DeviceServiceTest {
 
     assertEquals(deviceId, response.id());
     assertEquals("AA:BB:CC:DD:EE:FF", response.macAddress());
+    assertEquals(zoneId, response.zoneId());
+    assertEquals("Test Zone", response.zoneName());
   }
 
   @Test
@@ -122,18 +136,19 @@ class DeviceServiceTest {
   @Test
   void updateDevice_success() {
     UUID deviceId = UUID.randomUUID();
-    Device device = new Device(owner, 10.0, 20.0);
+    Device device = new Device(owner);
     device.setId(deviceId);
     device.setMacAddress("AA:BB:CC:DD:EE:FF");
 
     when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
     when(userService.findUserById(ownerId)).thenReturn(owner);
+    when(zoneService.findZoneById(zoneId)).thenReturn(zone);
     when(deviceRepository.save(any(Device.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     DeviceResponse response = deviceService.updateDevice(deviceId, request);
 
-    assertEquals(10.0, response.lastLocationLat());
-    assertEquals(20.0, response.lastLocationLon());
+    assertEquals(zoneId, response.zoneId());
+    assertEquals("Test Zone", response.zoneName());
   }
 
   @Test
@@ -149,7 +164,7 @@ class DeviceServiceTest {
   @Test
   void deleteDevice_success() {
     UUID deviceId = UUID.randomUUID();
-    Device device = new Device(owner, 10.0, 20.0);
+    Device device = new Device(owner);
     when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
 
     assertDoesNotThrow(() -> deviceService.deleteDevice(deviceId));
@@ -169,7 +184,7 @@ class DeviceServiceTest {
   @Test
   void handleSos_updatesStatus() {
     String macAddress = "AA:BB:CC:DD:EE:FF";
-    Device device = new Device(owner, 10.0, 20.0);
+    Device device = new Device(owner);
     device.setMacAddress(macAddress);
 
     when(deviceRepository.findByMacAddress(macAddress)).thenReturn(Optional.of(device));
@@ -183,7 +198,7 @@ class DeviceServiceTest {
   @Test
   void handleOffline_updatesStatus() {
     String macAddress = "AA:BB:CC:DD:EE:FF";
-    Device device = new Device(owner, 10.0, 20.0);
+    Device device = new Device(owner);
     device.setMacAddress(macAddress);
 
     when(deviceRepository.findByMacAddress(macAddress)).thenReturn(Optional.of(device));

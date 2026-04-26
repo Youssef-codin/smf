@@ -164,8 +164,6 @@ public class SeedData implements CommandLineRunner {
       Device device = new Device();
       device.setMacAddress(macAddress);
       device.setOwner(owner);
-      device.setLastLocationLat(34.052235);
-      device.setLastLocationLon(-118.243683);
       device.setLastSeenTimestamp(Timestamp.from(Instant.now()));
       deviceRepository.save(device);
     }
@@ -181,8 +179,6 @@ public class SeedData implements CommandLineRunner {
       device.setLabel(label);
       device.setSecret(encryptionUtil.encrypt(secret));
       device.setRegistered(true);
-      device.setLastLocationLat(34.052235);
-      device.setLastLocationLon(-118.243683);
       device.setLastSeenTimestamp(Timestamp.from(Instant.now()));
       deviceRepository.save(device);
 

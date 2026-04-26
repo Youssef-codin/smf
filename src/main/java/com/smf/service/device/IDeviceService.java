@@ -26,4 +26,6 @@ public interface IDeviceService {
   Device findDeviceById(UUID deviceId);
 
   int incrementViolationCount(String macAddress);
+
+  DeviceResponse updateDeviceZone(String macAddress, UUID zoneId);
 }

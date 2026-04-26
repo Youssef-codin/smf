@@ -10,6 +10,7 @@ import com.smf.repo.DeviceRepository;
 import com.smf.service.registereddevice.IRegisteredDeviceService;
 import com.smf.service.smfdevice.ISmfDeviceService;
 import com.smf.service.user.IUserService;
+import com.smf.service.zone.IZoneService;
 import com.smf.util.AppError;
 import java.util.List;
 import java.util.UUID;
@@ -28,16 +29,19 @@ public class DeviceService implements IDeviceService {
   private final ISmfDeviceService smfDeviceService;
   private final IRegisteredDeviceService registeredDeviceService;
   private final IUserService userService;
+  private final IZoneService zoneService;
 
   public DeviceService(
       DeviceRepository deviceRepository,
       ISmfDeviceService smfDeviceService,
       @Lazy IRegisteredDeviceService registeredDeviceService,
-      IUserService userService) {
+      IUserService userService,
+      IZoneService zoneService) {
     this.deviceRepository = deviceRepository;
     this.smfDeviceService = smfDeviceService;
     this.registeredDeviceService = registeredDeviceService;
     this.userService = userService;
+    this.zoneService = zoneService;
   }
 
   @Override
@@ -51,7 +55,11 @@ public class DeviceService implements IDeviceService {
 
     User owner = userService.findUserById(UUID.fromString(request.ownerId()));
 
-    Device device = new Device(owner, request.lastLocationLat(), request.lastLocationLon());
+    Device device = new Device(owner);
+
+    if (request.zoneId() != null) {
+      device.setLastZone(zoneService.findZoneById(request.zoneId()));
+    }
 
     device = deviceRepository.save(device);
 
@@ -88,8 +96,10 @@ public class DeviceService implements IDeviceService {
     User owner = userService.findUserById(UUID.fromString(request.ownerId()));
 
     device.setOwner(owner);
-    device.setLastLocationLat(request.lastLocationLat());
-    device.setLastLocationLon(request.lastLocationLon());
+
+    if (request.zoneId() != null) {
+      device.setLastZone(zoneService.findZoneById(request.zoneId()));
+    }
 
     device = deviceRepository.save(device);
 
@@ -159,13 +169,22 @@ public class DeviceService implements IDeviceService {
     return updatedRows;
   }
 
+  @Override
+  @Transactional
+  public DeviceResponse updateDeviceZone(String macAddress, UUID zoneId) {
+    Device device = findDeviceByMacAddress(macAddress);
+    device.setLastZone(zoneService.findZoneById(zoneId));
+    device = deviceRepository.save(device);
+    return mapToDeviceResponse(device);
+  }
+
   private DeviceResponse mapToDeviceResponse(Device device) {
     return new DeviceResponse(
         device.getId(),
         device.getMacAddress(),
         device.getOwner() != null ? device.getOwner().getId() : null,
-        device.getLastLocationLat(),
-        device.getLastLocationLon(),
+        device.getLastZone() != null ? device.getLastZone().getId() : null,
+        device.getLastZone() != null ? device.getLastZone().getName() : null,
         device.getLastSeenTimestamp(),
         device.getStatus(),
         device.getViolationCount() != null ? device.getViolationCount() : 0);
