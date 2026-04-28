@@ -8,6 +8,7 @@ import com.smf.dto.auth.OAuthRequest;
 import com.smf.dto.auth.RefreshRequest;
 import com.smf.dto.auth.RegisterRequest;
 import com.smf.model.User;
+import com.smf.ratelimit.RateLimit;
 import com.smf.service.auth.IAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
   private final IAuthService authService;
 
+  @RateLimit(capacity = 5, period = 60)
   @PostMapping("/login")
   public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest req) {
     JwtResponse jwtResponse = authService.login(req);
