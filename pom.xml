@@ -119,6 +119,12 @@
     <version>8.10.1</version>
     </dependency>
 
+    <!-- Caffeine for rate limit cache -->
+    <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+    </dependency>
+
     </dependencies>
 
     <build>

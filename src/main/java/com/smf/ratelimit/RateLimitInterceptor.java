@@ -10,7 +10,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,7 +25,10 @@ public class RateLimitInterceptor implements HandlerInterceptor {
   private static final String HEADER_DEVICE_MAC = "X-Device-Mac";
   private static final String ANONYMOUS_USER = "anonymousUser";
 
-  private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+  private final com.github.benmanes.caffeine.cache.Cache<String, Bucket> cache = Caffeine.newBuilder()
+      .maximumSize(10000)
+      .expireAfterAccess(1, TimeUnit.HOURS)
+      .build();
   private final ObjectMapper objectMapper;
 
   public RateLimitInterceptor(ObjectMapper objectMapper) {
@@ -45,14 +49,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     String key = resolveKey(request);
-    Bucket bucket =
-        buckets.computeIfAbsent(
-            key,
-            k ->
-                Bucket.builder()
-                    .addLimit(
-                        Bandwidth.simple(rateLimit.capacity(), Duration.ofSeconds(rateLimit.period())))
-                    .build());
+    Bucket bucket = cache.get(key, ignored -> createBucket(rateLimit));
 
     var probe = bucket.tryConsumeAndReturnRemaining(1);
     if (!probe.isConsumed()) {
@@ -69,6 +66,12 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     return true;
+  }
+
+  private Bucket createBucket(RateLimit rateLimit) {
+    return Bucket.builder()
+        .addLimit(Bandwidth.simple(rateLimit.capacity(), Duration.ofSeconds(rateLimit.period())))
+        .build();
   }
 
   private String resolveKey(HttpServletRequest request) {
