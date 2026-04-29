@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.smf.util.HmacUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,6 +25,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
   private static final String HEADER_DEVICE_MAC = "X-Device-Mac";
   private static final String ANONYMOUS_USER = "anonymousUser";
+  private static final String ANONYMOUS_RATELIMIT_SECRET = "smf-rate-limit-secret-change-in-prod";
 
   private final com.github.benmanes.caffeine.cache.Cache<String, Bucket> cache = Caffeine.newBuilder()
       .maximumSize(10000)
@@ -97,7 +99,18 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     if (ipAddress == null || ipAddress.isBlank()) {
       ipAddress = "unknown";
     }
-    return "ip:" + ipAddress;
+    String userAgent = request.getHeader("User-Agent");
+    if (userAgent == null || userAgent.isBlank()) {
+      userAgent = "unknown";
+    }
+    String payload = ipAddress + ":" + userAgent;
+    String anonKey;
+    try {
+      anonKey = HmacUtil.computeSignature(payload, 0L, ANONYMOUS_RATELIMIT_SECRET);
+    } catch (Exception e) {
+      anonKey = payload; // fallback
+    }
+    return "anon:" + anonKey;
   }
 }
 
