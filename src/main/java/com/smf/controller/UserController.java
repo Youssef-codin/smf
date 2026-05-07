@@ -15,30 +15,40 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("${api.prefix}/users")
-@PreAuthorize("hasAuthority('ADMIN')")
 public class UserController {
 
   private final IUserService userService;
 
+  @GetMapping("/me")
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'USER')")
+  public ResponseEntity<ApiResponse> getCurrentUser() {
+    UserResponse response = userService.getCurrentUser();
+    return ResponseEntity.ok(new ApiResponse(true, "User fetched successfully", response));
+  }
+
   @PostMapping("/")
+  @PreAuthorize("hasAuthority('ADMIN')")
   public ResponseEntity<ApiResponse> createUser(@Valid @RequestBody UserRequest request) {
     UserResponse response = userService.createUser(request);
     return ResponseEntity.ok(new ApiResponse(true, "User created successfully", response));
   }
 
   @GetMapping("/{id}")
+  @PreAuthorize("hasAuthority('ADMIN')")
   public ResponseEntity<ApiResponse> getUser(@PathVariable UUID id) {
     UserResponse response = userService.getUserById(id);
     return ResponseEntity.ok(new ApiResponse(true, "User fetched successfully", response));
   }
 
   @GetMapping("/")
+  @PreAuthorize("hasAuthority('ADMIN')")
   public ResponseEntity<ApiResponse> getAllUsers() {
     List<UserResponse> users = userService.getAllUsers();
     return ResponseEntity.ok(new ApiResponse(true, "Users fetched successfully", users));
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize("hasAuthority('ADMIN')")
   public ResponseEntity<ApiResponse> updateUser(
       @PathVariable UUID id, @Valid @RequestBody UserRequest request) {
     UserResponse response = userService.updateUser(id, request);
@@ -46,6 +56,7 @@ public class UserController {
   }
 
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasAuthority('ADMIN')")
   public ResponseEntity<ApiResponse> deleteUser(@PathVariable UUID id) {
     userService.deleteUser(id);
     return ResponseEntity.ok(new ApiResponse(true, "User deleted successfully", null));

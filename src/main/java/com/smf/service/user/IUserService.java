@@ -19,4 +19,6 @@ public interface IUserService {
   void deleteUser(UUID userId);
 
   User findUserById(UUID userId);
+
+  UserResponse getCurrentUser();
 }
