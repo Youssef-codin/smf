@@ -23,8 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventController {
   private final IEventService service;
 
-  @PreAuthorize("hasAuthority('USER')")
   @GetMapping("/client")
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'USER')")
   public ResponseEntity<ApiResponse> getEvents(
       @RequestParam(required = false) @Min(1) Integer since) {
 
