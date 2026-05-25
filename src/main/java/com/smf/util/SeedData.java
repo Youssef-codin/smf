@@ -1,12 +1,16 @@
 package com.smf.util;
 
 import com.smf.dto.auth.RegisterRequest;
+import com.smf.model.Announcement;
 import com.smf.model.Device;
 import com.smf.model.RegisteredDevice;
 import com.smf.model.Role;
 import com.smf.model.SmfDevice;
 import com.smf.model.User;
 import com.smf.model.Zone;
+import com.smf.model.enums.AnnouncementPriority;
+import com.smf.model.enums.AnnouncementStatus;
+import com.smf.repo.AnnouncementRepository;
 import com.smf.repo.DeviceRepository;
 import com.smf.repo.RegisteredDeviceRepository;
 import com.smf.repo.RoleRepository;
@@ -33,6 +37,7 @@ public class SeedData implements CommandLineRunner {
   private final ZoneRepository zoneRepository;
   private final SmfDeviceRepository smfDeviceRepository;
   private final RegisteredDeviceRepository registeredDeviceRepository;
+  private final AnnouncementRepository announcementRepository;
   private final EncryptionUtil encryptionUtil;
 
   @Value("${app.is-dev-mode:false}")
@@ -46,6 +51,7 @@ public class SeedData implements CommandLineRunner {
       ZoneRepository zoneRepository,
       SmfDeviceRepository smfDeviceRepository,
       RegisteredDeviceRepository registeredDeviceRepository,
+      AnnouncementRepository announcementRepository,
       EncryptionUtil encryptionUtil) {
     this.authService = authService;
     this.roleRepository = roleRepository;
@@ -54,6 +60,7 @@ public class SeedData implements CommandLineRunner {
     this.zoneRepository = zoneRepository;
     this.smfDeviceRepository = smfDeviceRepository;
     this.registeredDeviceRepository = registeredDeviceRepository;
+    this.announcementRepository = announcementRepository;
     this.encryptionUtil = encryptionUtil;
   }
 
@@ -114,6 +121,9 @@ public class SeedData implements CommandLineRunner {
           "smf device",
           "f09a641e6ecc4539cd6dd2d255801de5de5e7994e7e0a8c131aa9afd5ef21749");
     }
+
+    // Seed announcements
+    seedAnnouncements(adminUser);
   }
 
   private Role seedRole(String roleName, boolean isAdmin) {
@@ -182,6 +192,60 @@ public class SeedData implements CommandLineRunner {
       device.setLastSeenTimestamp(Timestamp.from(Instant.now()));
       deviceRepository.save(device);
     }
+  }
+
+  private void seedAnnouncements(User admin) {
+    if (announcementRepository.count() > 0) return;
+
+    seedAnnouncement(
+        admin,
+        "Security Update Available",
+        "System firmware v2.4.1 is ready for deployment. Please schedule maintenance window.",
+        AnnouncementPriority.MEDIUM,
+        Instant.now().minusSeconds(120));
+
+    seedAnnouncement(
+        admin,
+        "New Zone Access Policy",
+        "Zone B access has been restricted to ENGINEER and MANAGER roles effective immediately.",
+        AnnouncementPriority.HIGH,
+        Instant.now().minusSeconds(480));
+
+    seedAnnouncement(
+        admin,
+        "System Health Check Complete",
+        "Weekly diagnostics completed. All sensors and devices are operating within normal parameters.",
+        AnnouncementPriority.LOW,
+        Instant.now().minusSeconds(3600));
+
+    seedAnnouncement(
+        admin,
+        "Planned Maintenance Window",
+        "System will undergo scheduled maintenance Sunday 02:00–04:00 UTC. Expect brief downtime.",
+        AnnouncementPriority.HIGH,
+        Instant.now().plusSeconds(86400));
+
+    System.out.println("Announcements seeded.");
+  }
+
+  private void seedAnnouncement(
+      User createdBy, String title, String message, AnnouncementPriority priority, Instant time) {
+    Announcement a = new Announcement();
+    a.setTitle(title);
+    a.setMessage(message);
+    a.setPriority(priority);
+    a.setCreatedAt(Instant.now());
+    a.setCreatedBy(createdBy);
+
+    if (time.isAfter(Instant.now())) {
+      a.setStatus(AnnouncementStatus.SCHEDULED);
+      a.setScheduledFor(time);
+    } else {
+      a.setStatus(AnnouncementStatus.SENT);
+      a.setSentAt(time);
+    }
+
+    announcementRepository.save(a);
   }
 
   private void seedSmfDevice(

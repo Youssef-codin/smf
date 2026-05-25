@@ -1470,6 +1470,211 @@ paths:
             type: string
       requestBody:
         $ref: '#/components/requestBodies/update_an_existing_zone'
+  /api/v1/announcements/:
+    post:
+      summary: Create an announcement
+      operationId: >-
+        home_joe-arch_documents_bruno_smf_security_management_framework_api_announcement-controller_create_an_announcement_yml
+      description: >-
+        Creates a new announcement. If scheduledFor is omitted or in the past,
+        the announcement is sent immediately and broadcast over WebSocket (/topic/announcements).
+        Otherwise it is stored as SCHEDULED and dispatched by a background job.
+        Requires ADMIN role.
+      tags:
+        - announcement-controller
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                  time:
+                    type: string
+              example:
+                success: true
+                message: Announcement created successfully
+                data:
+                  id: 550e8400-e29b-41d4-a716-446655440000
+                  title: Security Update Available
+                  message: System firmware v2.4.1 is ready for deployment
+                  priority: MEDIUM
+                  status: SENT
+                  scheduledFor: null
+                  sentAt: '2024-01-15T10:30:00Z'
+                  createdAt: '2024-01-15T10:30:00Z'
+                  createdById: 1c4f0010-0502-412c-882a-c77cf589d5b4
+                  createdByUsername: admin
+                time: '2024-01-15T10:30:00Z'
+      requestBody:
+        $ref: '#/components/requestBodies/create_an_announcement'
+      security:
+        - create_an_announcement: []
+    get:
+      summary: Get all announcements
+      operationId: >-
+        home_joe-arch_documents_bruno_smf_security_management_framework_api_announcement-controller_get_all_announcements_yml
+      description: >-
+        Retrieves announcements, newest first. Optionally filter by status
+        (SENT or SCHEDULED) and/or search title/message (case-insensitive).
+        Requires ADMIN role.
+      tags:
+        - announcement-controller
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                  time:
+                    type: string
+              example:
+                success: true
+                message: Announcements fetched successfully
+                data:
+                  - id: 550e8400-e29b-41d4-a716-446655440000
+                    title: Security Update Available
+                    message: System firmware v2.4.1 is ready for deployment
+                    priority: MEDIUM
+                    status: SENT
+                    scheduledFor: null
+                    sentAt: '2024-01-15T10:28:00Z'
+                    createdAt: '2024-01-15T10:28:00Z'
+                    createdById: 1c4f0010-0502-412c-882a-c77cf589d5b4
+                    createdByUsername: admin
+                  - id: 550e8400-e29b-41d4-a716-446655440001
+                    title: Planned Maintenance
+                    message: System will be offline Sunday 02:00–04:00 UTC
+                    priority: HIGH
+                    status: SCHEDULED
+                    scheduledFor: '2024-01-21T02:00:00Z'
+                    sentAt: null
+                    createdAt: '2024-01-15T10:30:00Z'
+                    createdById: 1c4f0010-0502-412c-882a-c77cf589d5b4
+                    createdByUsername: admin
+                time: '2024-01-15T10:30:00Z'
+      parameters:
+        - name: status
+          in: query
+          description: Filter by status (SENT or SCHEDULED)
+          required: false
+          schema:
+            type: string
+            enum: [SENT, SCHEDULED]
+        - name: search
+          in: query
+          description: Case-insensitive substring search on title and message
+          required: false
+          schema:
+            type: string
+      security:
+        - get_all_announcements: []
+  /api/v1/announcements/:id:
+    get:
+      summary: Get an announcement by ID
+      operationId: >-
+        home_joe-arch_documents_bruno_smf_security_management_framework_api_announcement-controller_get_announcement_by_id_yml
+      description: Retrieves a specific announcement by its UUID. Requires ADMIN role.
+      tags:
+        - announcement-controller
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                  time:
+                    type: string
+              example:
+                success: true
+                message: Announcement fetched successfully
+                data:
+                  id: 550e8400-e29b-41d4-a716-446655440000
+                  title: Security Update Available
+                  message: System firmware v2.4.1 is ready for deployment
+                  priority: MEDIUM
+                  status: SENT
+                  scheduledFor: null
+                  sentAt: '2024-01-15T10:28:00Z'
+                  createdAt: '2024-01-15T10:28:00Z'
+                  createdById: 1c4f0010-0502-412c-882a-c77cf589d5b4
+                  createdByUsername: admin
+                time: '2024-01-15T10:30:00Z'
+        '404':
+          description: Not Found
+        parameters:
+          - name: id
+            in: path
+            description: UUID of the announcement
+            required: true
+            schema:
+              type: string
+      security:
+        - get_announcement_by_id: []
+    delete:
+      summary: Delete an announcement
+      operationId: >-
+        home_joe-arch_documents_bruno_smf_security_management_framework_api_announcement-controller_delete_announcement_yml
+      description: >-
+        Deletes an announcement by its UUID. Can be used to cancel a SCHEDULED
+        announcement before it is dispatched. Requires ADMIN role.
+      tags:
+        - announcement-controller
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                  time:
+                    type: string
+              example:
+                success: true
+                message: Announcement deleted successfully
+                data: {}
+                time: '2024-01-15T10:30:00Z'
+        '404':
+          description: Not Found
+        parameters:
+          - name: id
+            in: path
+            description: UUID of the announcement to delete
+            required: true
+            schema:
+              type: string
+      security:
+        - delete_announcement: []
 servers:
   - url: http://localhost:8080
     description: Base Server
@@ -1650,6 +1855,33 @@ components:
           type: string
       example:
         name: Updated Zone Name
+    create_an_announcement:
+      type: object
+      required:
+        - title
+        - message
+        - priority
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+          maxLength: 400
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        scheduledFor:
+          type: string
+          format: date-time
+          description: >-
+            Optional ISO-8601 timestamp. If omitted or in the past the announcement
+            is sent immediately. If in the future it is queued and dispatched by the
+            background scheduler (polls every 60 s).
+      example:
+        title: Planned Maintenance
+        message: System will be offline Sunday 02:00–04:00 UTC
+        priority: HIGH
+        scheduledFor: '2024-01-21T02:00:00Z'
   requestBodies:
     authenticate_user:
       content:
@@ -1763,6 +1995,13 @@ components:
             $ref: '#/components/schemas/update_an_existing_zone'
       description: ''
       required: true
+    create_an_announcement:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/create_an_announcement'
+      description: ''
+      required: true
   securitySchemes:
     add_device_to_registry:
       type: http
@@ -1780,6 +2019,18 @@ components:
       type: http
       scheme: bearer
     get_unregistered_smf_devices:
+      type: http
+      scheme: bearer
+    create_an_announcement:
+      type: http
+      scheme: bearer
+    get_all_announcements:
+      type: http
+      scheme: bearer
+    get_announcement_by_id:
+      type: http
+      scheme: bearer
+    delete_announcement:
       type: http
       scheme: bearer
 
