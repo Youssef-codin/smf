@@ -1,5 +1,6 @@
 package com.smf.service.notification;
 
+import com.smf.dto.announcement.AnnouncementResponse;
 import com.smf.dto.notification.NotificationMessage;
 import com.smf.dto.notification.NotificationMessage.NotificationType;
 import com.smf.model.enums.EventTypes;
@@ -27,6 +28,11 @@ public class NotificationService {
     NotificationMessage message =
         NotificationMessage.fromEvent(eventId, notificationType, macAddress, metadata);
     broadcast(message);
+  }
+
+  public void broadcastAnnouncement(AnnouncementResponse announcement) {
+    log.info("Broadcasting announcement: id={}, title={}", announcement.id(), announcement.title());
+    messagingTemplate.convertAndSend("/topic/announcements", announcement);
   }
 
   public void broadcast(NotificationMessage message) {

@@ -23,3 +23,21 @@ CREATE TABLE IF NOT EXISTS user_roles (
     CONSTRAINT fk_user_roles_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT fk_user_roles_role FOREIGN KEY (role_id) REFERENCES roles(id)
 );
+
+-- Announcements table
+CREATE TABLE IF NOT EXISTS announcements (
+    id UUID PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    message VARCHAR(400) NOT NULL,
+    priority VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    scheduled_for TIMESTAMP,
+    sent_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    created_by UUID NOT NULL,
+
+    CONSTRAINT fk_announcements_created_by
+        FOREIGN KEY (created_by)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
