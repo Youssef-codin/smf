@@ -88,7 +88,22 @@ public class SeedData implements CommandLineRunner {
             "Zone B - Engineering & Manager", new HashSet<>(Set.of(engineerRole, managerRole)));
     Zone zoneC = seedZone("Zone C - Open Access", new HashSet<>());
 
-    System.out.println("Zones seeded: Zone A, Zone B, Zone C");
+    Role[][] roleCombos = {
+      {engineerRole},
+      {managerRole},
+      {workerRole},
+      {engineerRole, managerRole},
+      {managerRole, workerRole},
+      {engineerRole, workerRole},
+      {engineerRole, managerRole, workerRole},
+      {}
+    };
+    for (int i = 1; i <= 50; i++) {
+      Role[] combo = roleCombos[i % roleCombos.length];
+      seedZone("Zone " + i, new HashSet<>(Set.of(combo)));
+    }
+
+    System.out.println("Zones seeded: Zone A, Zone B, Zone C, and Zone 1-50");
 
     // Seed devices in dev mode
     if (isDevMode) {
