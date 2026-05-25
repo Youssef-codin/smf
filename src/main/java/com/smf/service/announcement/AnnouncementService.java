@@ -21,6 +21,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @Slf4j
@@ -35,7 +37,9 @@ public class AnnouncementService implements IAnnouncementService {
   @Transactional
   public AnnouncementResponse create(AnnouncementRequest request) {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    AppUserDetails principal = (AppUserDetails) auth.getPrincipal();
+    if (auth == null || !(auth.getPrincipal() instanceof AppUserDetails principal)) {
+      throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found");
+    }
     User creator =
         userRepository
             .findById(principal.getId())
@@ -63,7 +67,7 @@ public class AnnouncementService implements IAnnouncementService {
 
     AnnouncementResponse response = mapToResponse(announcement);
     if (sendNow) {
-      notificationService.broadcastAnnouncement(response);
+      broadcastAfterCommit(response);
     }
     return response;
   }
@@ -127,8 +131,22 @@ public class AnnouncementService implements IAnnouncementService {
       announcement.setStatus(AnnouncementStatus.SENT);
       announcement.setSentAt(Instant.now());
       announcement = announcementRepository.save(announcement);
-      notificationService.broadcastAnnouncement(mapToResponse(announcement));
+      final AnnouncementResponse dispatched = mapToResponse(announcement);
+      broadcastAfterCommit(dispatched);
       log.info("Dispatched scheduled announcement: id={}, title={}", announcement.getId(), announcement.getTitle());
+    }
+  }
+
+  private void broadcastAfterCommit(AnnouncementResponse response) {
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          notificationService.broadcastAnnouncement(response);
+        }
+      });
+    } else {
+      notificationService.broadcastAnnouncement(response);
     }
   }
 

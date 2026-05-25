@@ -31,9 +31,9 @@ CREATE TABLE IF NOT EXISTS announcements (
     message VARCHAR(400) NOT NULL,
     priority VARCHAR(20) NOT NULL,
     status VARCHAR(20) NOT NULL,
-    scheduled_for TIMESTAMP,
-    sent_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL,
+    scheduled_for TIMESTAMP WITH TIME ZONE,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_by UUID NOT NULL,
 
     CONSTRAINT fk_announcements_created_by

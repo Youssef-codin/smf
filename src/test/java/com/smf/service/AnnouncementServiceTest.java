@@ -11,6 +11,7 @@ import com.smf.model.enums.AnnouncementPriority;
 import com.smf.model.enums.AnnouncementStatus;
 import com.smf.repo.AnnouncementRepository;
 import com.smf.repo.UserRepository;
+import com.smf.security.AppUserDetails;
 import com.smf.service.announcement.AnnouncementService;
 import com.smf.service.notification.NotificationService;
 import com.smf.util.AppError;
@@ -54,8 +55,9 @@ class AnnouncementServiceTest {
   }
 
   private void stubSecurityContext() {
+    AppUserDetails principal = new AppUserDetails(userId, "admin@test.com", "pass", List.of());
     Authentication auth = mock(Authentication.class);
-    when(auth.getName()).thenReturn(userId.toString());
+    when(auth.getPrincipal()).thenReturn(principal);
     SecurityContext securityContext = mock(SecurityContext.class);
     when(securityContext.getAuthentication()).thenReturn(auth);
     SecurityContextHolder.setContext(securityContext);
