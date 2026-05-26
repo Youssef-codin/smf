@@ -1,6 +1,8 @@
 package com.smf.util;
 
 import com.smf.dto.auth.RegisterRequest;
+import com.smf.dto.worker.WorkerRequest;
+import com.smf.dto.worker.WorkerResponse;
 import com.smf.model.Announcement;
 import com.smf.model.Device;
 import com.smf.model.RegisteredDevice;
@@ -18,16 +20,21 @@ import com.smf.repo.SmfDeviceRepository;
 import com.smf.repo.UserRepository;
 import com.smf.repo.ZoneRepository;
 import com.smf.service.auth.IAuthService;
+import com.smf.service.worker.IWorkerService;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
 @Component
+@Slf4j
 public class SeedData implements CommandLineRunner {
 
   private final IAuthService authService;
@@ -39,6 +46,8 @@ public class SeedData implements CommandLineRunner {
   private final RegisteredDeviceRepository registeredDeviceRepository;
   private final AnnouncementRepository announcementRepository;
   private final EncryptionUtil encryptionUtil;
+  private final IWorkerService workerService;
+  private final RestClient supabaseRestClient;
 
   @Value("${app.is-dev-mode:false}")
   private boolean isDevMode;
@@ -52,7 +61,9 @@ public class SeedData implements CommandLineRunner {
       SmfDeviceRepository smfDeviceRepository,
       RegisteredDeviceRepository registeredDeviceRepository,
       AnnouncementRepository announcementRepository,
-      EncryptionUtil encryptionUtil) {
+      EncryptionUtil encryptionUtil,
+      IWorkerService workerService,
+      RestClient supabaseRestClient) {
     this.authService = authService;
     this.roleRepository = roleRepository;
     this.userRepository = userRepository;
@@ -62,6 +73,8 @@ public class SeedData implements CommandLineRunner {
     this.registeredDeviceRepository = registeredDeviceRepository;
     this.announcementRepository = announcementRepository;
     this.encryptionUtil = encryptionUtil;
+    this.workerService = workerService;
+    this.supabaseRestClient = supabaseRestClient;
   }
 
   @Override
@@ -124,6 +137,9 @@ public class SeedData implements CommandLineRunner {
 
     // Seed announcements
     seedAnnouncements(adminUser);
+
+    // Seed workers to Supabase
+    seedWorkers();
   }
 
   private Role seedRole(String roleName, boolean isAdmin) {
@@ -246,6 +262,91 @@ public class SeedData implements CommandLineRunner {
     }
 
     announcementRepository.save(a);
+  }
+
+  private void seedWorkers() {
+    try {
+      WorkerResponse[] existing =
+          supabaseRestClient.get().uri("/workers?select=id&limit=1").retrieve().body(WorkerResponse[].class);
+      if (existing != null && existing.length > 0) return;
+
+      seedWorker(
+          "عمر حسن الرشيدي", "Omar Hassan Al-Rashidi",
+          LocalDate.of(1985, 3, 14),
+          "شارع الملك فهد، الرياض", "King Fahd Road, Riyadh",
+          "0501234567",
+          "عامل بناء", "Construction Worker",
+          "شركة الإنشاءات المتحدة", "United Construction Co.",
+          "مشروع أبراج المدينة", "City Towers Project",
+          "داء السكري من النوع الثاني", "Type 2 Diabetes",
+          "يحتاج إلى مراقبة الجلوكوز بانتظام وتناول الأدوية عن طريق الفم.",
+          "Requires regular glucose monitoring and oral medications.",
+          "سارة عمر", "Sarah Omar", "زوجة / Wife", "0509876543");
+
+      seedWorker(
+          "فاطمة ناصر الزهراء", "Fatima Nasser Al-Zahra",
+          LocalDate.of(1990, 7, 22),
+          "حي النزهة، جدة", "Al-Nuzha District, Jeddah",
+          "0551122334",
+          "كهربائية", "Electrician",
+          "شركة الطاقة الوطنية", "National Energy Co.",
+          "محطة التوزيع الرئيسية", "Main Distribution Station",
+          "ارتفاع ضغط الدم", "Hypertension",
+          "تتناول أملوديبين 5 ملغ يومياً. تجنب الإجهاد الشديد.",
+          "Takes Amlodipine 5mg daily. Avoid heavy exertion.",
+          "خالد ناصر", "Khaled Nasser", "أخ / Brother", "0567788990");
+
+      seedWorker(
+          "محمد خالد السيد", "Mohammed Khalid Al-Sayed",
+          LocalDate.of(1992, 11, 5),
+          "حي العزيزية، مكة المكرمة", "Al-Aziziyah District, Makkah",
+          "0533445566",
+          "عامل عام", "General Worker",
+          "مجموعة الخليج للمقاولات", "Gulf Contracting Group",
+          "مستودع الجنوب", "South Warehouse",
+          null, null,
+          null, null,
+          "أمينة السيد", "Amina Al-Sayed", "أم / Mother", "0512233445");
+
+      seedWorker(
+          "يوسف إبراهيم المنصور", "Yousef Ibrahim Al-Mansour",
+          LocalDate.of(1988, 1, 30),
+          "شارع التحلية، الدمام", "Al-Tahliyah Street, Dammam",
+          "0544556677",
+          "مشغّل رافعة", "Crane Operator",
+          "شركة المنصور للرفع الثقيل", "Al-Mansour Heavy Lifting Co.",
+          "ميناء الملك عبدالعزيز", "King Abdulaziz Port",
+          "الربو", "Asthma",
+          "يحمل بخاخ سالبوتامول للطوارئ. يتجنب الغبار والأدخنة.",
+          "Carries Salbutamol inhaler for emergencies. Avoid dust and fumes.",
+          "نورة المنصور", "Noura Al-Mansour", "زوجة / Wife", "0566778899");
+
+      System.out.println("Workers seeded to Supabase.");
+    } catch (Exception ex) {
+      log.warn("Worker seeding skipped — Supabase unreachable or key not configured: {}", ex.getMessage());
+    }
+  }
+
+  private void seedWorker(
+      String fullNameAr, String fullNameEn,
+      LocalDate dateOfBirth,
+      String addressAr, String addressEn,
+      String phone,
+      String roleAr, String roleEn,
+      String companyAr, String companyEn,
+      String workLocationAr, String workLocationEn,
+      String medicalConditionAr, String medicalConditionEn,
+      String clinicalNotesAr, String clinicalNotesEn,
+      String emergencyContactName, String emergencyContactNameEn,
+      String emergencyContactRelation, String emergencyPhone) {
+    workerService.create(new WorkerRequest(
+        fullNameAr, fullNameEn, dateOfBirth,
+        addressAr, addressEn, phone,
+        roleAr, roleEn, companyAr, companyEn,
+        workLocationAr, workLocationEn,
+        medicalConditionAr, medicalConditionEn,
+        clinicalNotesAr, clinicalNotesEn,
+        emergencyContactName, emergencyContactRelation, emergencyPhone));
   }
 
   private void seedSmfDevice(

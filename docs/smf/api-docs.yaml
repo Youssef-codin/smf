@@ -1470,6 +1470,199 @@ paths:
             type: string
       requestBody:
         $ref: '#/components/requestBodies/update_an_existing_zone'
+
+  /api/v1/workers:
+    post:
+      summary: Create a worker
+      operationId: create_worker
+      description: >-
+        Creates a new worker record in Supabase and returns the saved row including the
+        generated UUID. The UUID is created by Spring Boot, not Supabase.
+        Requires ADMIN role.
+      tags:
+        - worker-controller
+      requestBody:
+        $ref: '#/components/requestBodies/create_worker'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/worker_response'
+                  time:
+                    type: string
+              example:
+                success: true
+                message: Worker created successfully
+                data:
+                  id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  full_name_ar: عمر حسن الرشيدي
+                  full_name_en: Omar Hassan Al-Rashidi
+                  date_of_birth: '1985-03-14'
+                  role_en: Construction Worker
+                  medical_condition_en: Type 2 Diabetes
+                  emergency_contact_name: Sarah Omar
+                  emergency_phone: '0509876543'
+                  created_at: '2026-05-26T12:00:00Z'
+                  updated_at: '2026-05-26T12:00:00Z'
+                time: '2026-05-26T12:00:00Z'
+      security:
+        - bearerAuth: []
+
+  /api/v1/workers/:id:
+    get:
+      summary: Get a worker by ID
+      operationId: get_worker
+      description: Retrieves the full worker profile from Supabase by UUID. Requires ADMIN role.
+      tags:
+        - worker-controller
+      parameters:
+        - name: id
+          in: path
+          description: UUID of the worker
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/worker_response'
+                  time:
+                    type: string
+              example:
+                success: true
+                message: Worker fetched successfully
+                data:
+                  id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  full_name_ar: عمر حسن الرشيدي
+                  full_name_en: Omar Hassan Al-Rashidi
+                  date_of_birth: '1985-03-14'
+                  address_en: King Fahd Road, Riyadh
+                  phone: '0501234567'
+                  role_en: Construction Worker
+                  company_en: United Construction Co.
+                  work_location_en: City Towers Project
+                  medical_condition_en: Type 2 Diabetes
+                  clinical_notes_en: Requires regular glucose monitoring and oral medications.
+                  emergency_contact_name: Sarah Omar
+                  emergency_contact_relation: Wife
+                  emergency_phone: '0509876543'
+                  created_at: '2026-05-26T12:00:00Z'
+                  updated_at: '2026-05-26T12:00:00Z'
+                time: '2026-05-26T12:00:00Z'
+        '404':
+          description: Not Found
+      security:
+        - bearerAuth: []
+
+    patch:
+      summary: Update a worker
+      operationId: update_worker
+      description: >-
+        Updates an existing worker record in Supabase. All fields are optional —
+        only send the fields you want to change. Requires ADMIN role.
+      tags:
+        - worker-controller
+      parameters:
+        - name: id
+          in: path
+          description: UUID of the worker to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        $ref: '#/components/requestBodies/update_worker'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/worker_response'
+                  time:
+                    type: string
+              example:
+                success: true
+                message: Worker updated successfully
+                data:
+                  id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  full_name_en: Omar Hassan Al-Rashidi
+                  medical_condition_en: Type 2 Diabetes — controlled
+                  updated_at: '2026-05-26T14:00:00Z'
+                time: '2026-05-26T14:00:00Z'
+        '404':
+          description: Not Found
+      security:
+        - bearerAuth: []
+
+    delete:
+      summary: Delete a worker
+      operationId: delete_worker
+      description: Deletes a worker record from Supabase by UUID. Requires ADMIN role.
+      tags:
+        - worker-controller
+      parameters:
+        - name: id
+          in: path
+          description: UUID of the worker to delete
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    nullable: true
+                  time:
+                    type: string
+              example:
+                success: true
+                message: Worker deleted successfully
+                data: null
+                time: '2026-05-26T14:00:00Z'
+        '404':
+          description: Not Found
+      security:
+        - bearerAuth: []
+
   /api/v1/announcements/:
     post:
       summary: Create an announcement
@@ -1882,6 +2075,125 @@ components:
         message: System will be offline Sunday 02:00–04:00 UTC
         priority: HIGH
         scheduledFor: '2024-01-21T02:00:00Z'
+
+    worker_request:
+      type: object
+      required:
+        - full_name_en
+      properties:
+        full_name_ar:
+          type: string
+          description: Full name in Arabic
+        full_name_en:
+          type: string
+          description: Full name in English (required)
+        date_of_birth:
+          type: string
+          format: date
+        address_ar:
+          type: string
+        address_en:
+          type: string
+        phone:
+          type: string
+        role_ar:
+          type: string
+        role_en:
+          type: string
+        company_ar:
+          type: string
+        company_en:
+          type: string
+        work_location_ar:
+          type: string
+        work_location_en:
+          type: string
+        medical_condition_ar:
+          type: string
+        medical_condition_en:
+          type: string
+        clinical_notes_ar:
+          type: string
+        clinical_notes_en:
+          type: string
+        emergency_contact_name:
+          type: string
+        emergency_contact_relation:
+          type: string
+        emergency_phone:
+          type: string
+      example:
+        full_name_ar: عمر حسن الرشيدي
+        full_name_en: Omar Hassan Al-Rashidi
+        date_of_birth: '1985-03-14'
+        address_ar: شارع الملك فهد، الرياض
+        address_en: King Fahd Road, Riyadh
+        phone: '0501234567'
+        role_ar: عامل بناء
+        role_en: Construction Worker
+        company_ar: شركة الإنشاءات المتحدة
+        company_en: United Construction Co.
+        work_location_ar: مشروع أبراج المدينة
+        work_location_en: City Towers Project
+        medical_condition_ar: داء السكري من النوع الثاني
+        medical_condition_en: Type 2 Diabetes
+        clinical_notes_ar: يحتاج إلى مراقبة الجلوكوز بانتظام وتناول الأدوية عن طريق الفم.
+        clinical_notes_en: Requires regular glucose monitoring and oral medications.
+        emergency_contact_name: Sarah Omar
+        emergency_contact_relation: Wife
+        emergency_phone: '0509876543'
+
+    worker_response:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name_ar:
+          type: string
+        full_name_en:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        address_ar:
+          type: string
+        address_en:
+          type: string
+        phone:
+          type: string
+        role_ar:
+          type: string
+        role_en:
+          type: string
+        company_ar:
+          type: string
+        company_en:
+          type: string
+        work_location_ar:
+          type: string
+        work_location_en:
+          type: string
+        medical_condition_ar:
+          type: string
+        medical_condition_en:
+          type: string
+        clinical_notes_ar:
+          type: string
+        clinical_notes_en:
+          type: string
+        emergency_contact_name:
+          type: string
+        emergency_contact_relation:
+          type: string
+        emergency_phone:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
   requestBodies:
     authenticate_user:
       content:
@@ -2002,7 +2314,25 @@ components:
             $ref: '#/components/schemas/create_an_announcement'
       description: ''
       required: true
+    create_worker:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/worker_request'
+      description: ''
+      required: true
+    update_worker:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/worker_request'
+      description: All fields optional — include only what you want to change.
+      required: true
   securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT token from POST /api/v1/auth/login
     add_device_to_registry:
       type: http
       scheme: bearer
