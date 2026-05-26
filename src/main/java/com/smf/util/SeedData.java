@@ -266,10 +266,6 @@ public class SeedData implements CommandLineRunner {
 
   private void seedWorkers() {
     try {
-      WorkerResponse[] existing =
-          supabaseRestClient.get().uri("/workers?select=id&limit=1").retrieve().body(WorkerResponse[].class);
-      if (existing != null && existing.length > 0) return;
-
       Role workerRole = roleRepository.findByRoleName("WORKER").orElseThrow();
 
       seedWorkerWithUser(workerRole, "omar.rashidi", "omar.rashidi@smf.com",
@@ -335,7 +331,13 @@ public class SeedData implements CommandLineRunner {
   private void seedWorkerWithUser(Role workerRole, String username, String email, WorkerRequest req) {
     User user = seedTestUser(username, email, "password", new HashSet<>(Set.of(workerRole)));
     if (user == null) return;
-    workerService.create(req, user.getId());
+    try {
+      workerService.get(user.getId());
+    } catch (AppError ex) {
+      if (ex.getStatus() == org.springframework.http.HttpStatus.NOT_FOUND) {
+        workerService.create(req, user.getId());
+      }
+    }
   }
 
   private void seedSmfDevice(
