@@ -270,56 +270,61 @@ public class SeedData implements CommandLineRunner {
           supabaseRestClient.get().uri("/workers?select=id&limit=1").retrieve().body(WorkerResponse[].class);
       if (existing != null && existing.length > 0) return;
 
-      seedWorker(
-          "عمر حسن الرشيدي", "Omar Hassan Al-Rashidi",
-          LocalDate.of(1985, 3, 14),
-          "شارع الملك فهد، الرياض", "King Fahd Road, Riyadh",
-          "0501234567",
-          "عامل بناء", "Construction Worker",
-          "شركة الإنشاءات المتحدة", "United Construction Co.",
-          "مشروع أبراج المدينة", "City Towers Project",
-          "داء السكري من النوع الثاني", "Type 2 Diabetes",
-          "يحتاج إلى مراقبة الجلوكوز بانتظام وتناول الأدوية عن طريق الفم.",
-          "Requires regular glucose monitoring and oral medications.",
-          "سارة عمر", "Sarah Omar", "زوجة / Wife", "0509876543");
+      Role workerRole = roleRepository.findByRoleName("WORKER").orElseThrow();
 
-      seedWorker(
-          "فاطمة ناصر الزهراء", "Fatima Nasser Al-Zahra",
-          LocalDate.of(1990, 7, 22),
-          "حي النزهة، جدة", "Al-Nuzha District, Jeddah",
-          "0551122334",
-          "كهربائية", "Electrician",
-          "شركة الطاقة الوطنية", "National Energy Co.",
-          "محطة التوزيع الرئيسية", "Main Distribution Station",
-          "ارتفاع ضغط الدم", "Hypertension",
-          "تتناول أملوديبين 5 ملغ يومياً. تجنب الإجهاد الشديد.",
-          "Takes Amlodipine 5mg daily. Avoid heavy exertion.",
-          "خالد ناصر", "Khaled Nasser", "أخ / Brother", "0567788990");
+      seedWorkerWithUser(workerRole, "omar.rashidi", "omar.rashidi@smf.com",
+          new WorkerRequest(
+              "عمر حسن الرشيدي", "Omar Hassan Al-Rashidi",
+              LocalDate.of(1985, 3, 14),
+              "شارع الملك فهد، الرياض", "King Fahd Road, Riyadh",
+              "0501234567",
+              "عامل بناء", "Construction Worker",
+              "شركة الإنشاءات المتحدة", "United Construction Co.",
+              "مشروع أبراج المدينة", "City Towers Project",
+              "داء السكري من النوع الثاني", "Type 2 Diabetes",
+              "يحتاج إلى مراقبة الجلوكوز بانتظام وتناول الأدوية عن طريق الفم.",
+              "Requires regular glucose monitoring and oral medications.",
+              "سارة عمر", "زوجة / Wife", "0509876543"));
 
-      seedWorker(
-          "محمد خالد السيد", "Mohammed Khalid Al-Sayed",
-          LocalDate.of(1992, 11, 5),
-          "حي العزيزية، مكة المكرمة", "Al-Aziziyah District, Makkah",
-          "0533445566",
-          "عامل عام", "General Worker",
-          "مجموعة الخليج للمقاولات", "Gulf Contracting Group",
-          "مستودع الجنوب", "South Warehouse",
-          null, null,
-          null, null,
-          "أمينة السيد", "Amina Al-Sayed", "أم / Mother", "0512233445");
+      seedWorkerWithUser(workerRole, "fatima.alzahra", "fatima.alzahra@smf.com",
+          new WorkerRequest(
+              "فاطمة ناصر الزهراء", "Fatima Nasser Al-Zahra",
+              LocalDate.of(1990, 7, 22),
+              "حي النزهة، جدة", "Al-Nuzha District, Jeddah",
+              "0551122334",
+              "كهربائية", "Electrician",
+              "شركة الطاقة الوطنية", "National Energy Co.",
+              "محطة التوزيع الرئيسية", "Main Distribution Station",
+              "ارتفاع ضغط الدم", "Hypertension",
+              "تتناول أملوديبين 5 ملغ يومياً. تجنب الإجهاد الشديد.",
+              "Takes Amlodipine 5mg daily. Avoid heavy exertion.",
+              "خالد ناصر", "أخ / Brother", "0567788990"));
 
-      seedWorker(
-          "يوسف إبراهيم المنصور", "Yousef Ibrahim Al-Mansour",
-          LocalDate.of(1988, 1, 30),
-          "شارع التحلية، الدمام", "Al-Tahliyah Street, Dammam",
-          "0544556677",
-          "مشغّل رافعة", "Crane Operator",
-          "شركة المنصور للرفع الثقيل", "Al-Mansour Heavy Lifting Co.",
-          "ميناء الملك عبدالعزيز", "King Abdulaziz Port",
-          "الربو", "Asthma",
-          "يحمل بخاخ سالبوتامول للطوارئ. يتجنب الغبار والأدخنة.",
-          "Carries Salbutamol inhaler for emergencies. Avoid dust and fumes.",
-          "نورة المنصور", "Noura Al-Mansour", "زوجة / Wife", "0566778899");
+      seedWorkerWithUser(workerRole, "mohammed.alsayed", "mohammed.alsayed@smf.com",
+          new WorkerRequest(
+              "محمد خالد السيد", "Mohammed Khalid Al-Sayed",
+              LocalDate.of(1992, 11, 5),
+              "حي العزيزية، مكة المكرمة", "Al-Aziziyah District, Makkah",
+              "0533445566",
+              "عامل عام", "General Worker",
+              "مجموعة الخليج للمقاولات", "Gulf Contracting Group",
+              "مستودع الجنوب", "South Warehouse",
+              null, null, null, null,
+              "أمينة السيد", "أم / Mother", "0512233445"));
+
+      seedWorkerWithUser(workerRole, "yousef.almansour", "yousef.almansour@smf.com",
+          new WorkerRequest(
+              "يوسف إبراهيم المنصور", "Yousef Ibrahim Al-Mansour",
+              LocalDate.of(1988, 1, 30),
+              "شارع التحلية، الدمام", "Al-Tahliyah Street, Dammam",
+              "0544556677",
+              "مشغّل رافعة", "Crane Operator",
+              "شركة المنصور للرفع الثقيل", "Al-Mansour Heavy Lifting Co.",
+              "ميناء الملك عبدالعزيز", "King Abdulaziz Port",
+              "الربو", "Asthma",
+              "يحمل بخاخ سالبوتامول للطوارئ. يتجنب الغبار والأدخنة.",
+              "Carries Salbutamol inhaler for emergencies. Avoid dust and fumes.",
+              "نورة المنصور", "زوجة / Wife", "0566778899"));
 
       System.out.println("Workers seeded to Supabase.");
     } catch (Exception ex) {
@@ -327,26 +332,10 @@ public class SeedData implements CommandLineRunner {
     }
   }
 
-  private void seedWorker(
-      String fullNameAr, String fullNameEn,
-      LocalDate dateOfBirth,
-      String addressAr, String addressEn,
-      String phone,
-      String roleAr, String roleEn,
-      String companyAr, String companyEn,
-      String workLocationAr, String workLocationEn,
-      String medicalConditionAr, String medicalConditionEn,
-      String clinicalNotesAr, String clinicalNotesEn,
-      String emergencyContactName, String emergencyContactNameEn,
-      String emergencyContactRelation, String emergencyPhone) {
-    workerService.create(new WorkerRequest(
-        fullNameAr, fullNameEn, dateOfBirth,
-        addressAr, addressEn, phone,
-        roleAr, roleEn, companyAr, companyEn,
-        workLocationAr, workLocationEn,
-        medicalConditionAr, medicalConditionEn,
-        clinicalNotesAr, clinicalNotesEn,
-        emergencyContactName, emergencyContactRelation, emergencyPhone));
+  private void seedWorkerWithUser(Role workerRole, String username, String email, WorkerRequest req) {
+    User user = seedTestUser(username, email, "password", new HashSet<>(Set.of(workerRole)));
+    if (user == null) return;
+    workerService.create(req, user.getId());
   }
 
   private void seedSmfDevice(

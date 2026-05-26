@@ -23,7 +23,11 @@ public class WorkerService implements IWorkerService {
 
   @Override
   public WorkerResponse create(WorkerRequest req) {
-    UUID id = UUID.randomUUID();
+    return create(req, UUID.randomUUID());
+  }
+
+  @Override
+  public WorkerResponse create(WorkerRequest req, UUID id) {
     ObjectNode body = objectMapper.valueToTree(req);
     body.put("id", id.toString());
 
