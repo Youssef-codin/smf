@@ -39,6 +39,7 @@ class WorkerServiceTest {
   private WorkerRequest request;
   private WorkerResponse response;
   private final UUID workerId = UUID.randomUUID();
+  private final UUID userId = UUID.randomUUID();
 
   @BeforeEach
   void setup() {
@@ -50,8 +51,8 @@ class WorkerServiceTest {
 
     request =
         new WorkerRequest(
-            null, "Test Worker", null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null);
+            userId, null, "Test Worker", null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null);
 
     response =
         new WorkerResponse(

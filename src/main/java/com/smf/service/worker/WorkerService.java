@@ -23,7 +23,7 @@ public class WorkerService implements IWorkerService {
 
   @Override
   public WorkerResponse create(WorkerRequest req) {
-    return create(req, UUID.randomUUID());
+    return create(req, req.userId());
   }
 
   @Override

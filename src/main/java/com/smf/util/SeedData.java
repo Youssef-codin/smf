@@ -270,7 +270,7 @@ public class SeedData implements CommandLineRunner {
 
       seedWorkerWithUser(workerRole, "omar.rashidi", "omar.rashidi@smf.com",
           new WorkerRequest(
-              "عمر حسن الرشيدي", "Omar Hassan Al-Rashidi",
+              null, "عمر حسن الرشيدي", "Omar Hassan Al-Rashidi",
               LocalDate.of(1985, 3, 14),
               "شارع الملك فهد، الرياض", "King Fahd Road, Riyadh",
               "0501234567",
@@ -284,7 +284,7 @@ public class SeedData implements CommandLineRunner {
 
       seedWorkerWithUser(workerRole, "fatima.alzahra", "fatima.alzahra@smf.com",
           new WorkerRequest(
-              "فاطمة ناصر الزهراء", "Fatima Nasser Al-Zahra",
+              null, "فاطمة ناصر الزهراء", "Fatima Nasser Al-Zahra",
               LocalDate.of(1990, 7, 22),
               "حي النزهة، جدة", "Al-Nuzha District, Jeddah",
               "0551122334",
@@ -298,7 +298,7 @@ public class SeedData implements CommandLineRunner {
 
       seedWorkerWithUser(workerRole, "mohammed.alsayed", "mohammed.alsayed@smf.com",
           new WorkerRequest(
-              "محمد خالد السيد", "Mohammed Khalid Al-Sayed",
+              null, "محمد خالد السيد", "Mohammed Khalid Al-Sayed",
               LocalDate.of(1992, 11, 5),
               "حي العزيزية، مكة المكرمة", "Al-Aziziyah District, Makkah",
               "0533445566",
@@ -310,7 +310,7 @@ public class SeedData implements CommandLineRunner {
 
       seedWorkerWithUser(workerRole, "yousef.almansour", "yousef.almansour@smf.com",
           new WorkerRequest(
-              "يوسف إبراهيم المنصور", "Yousef Ibrahim Al-Mansour",
+              null, "يوسف إبراهيم المنصور", "Yousef Ibrahim Al-Mansour",
               LocalDate.of(1988, 1, 30),
               "شارع التحلية، الدمام", "Al-Tahliyah Street, Dammam",
               "0544556677",
