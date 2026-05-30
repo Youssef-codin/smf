@@ -44,11 +44,11 @@ class UserServiceTest {
         request.setPassword("password");
         request.setRoles(Collections.emptySet());
 
-        Role role = new Role("ROLE_USER");
+        Role role = new Role("USER");
 
         when(userRepository.findByEmail("test@mail.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("password")).thenReturn("encoded");
-        when(roleService.findRoleByName("ROLE_USER")).thenReturn(role);
+        when(roleService.findRoleByName("USER")).thenReturn(role);
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         UserResponse response = userService.createUser(request);

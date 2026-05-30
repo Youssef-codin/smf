@@ -125,7 +125,7 @@ public class AuthService implements IAuthService {
     if (alreadyExist) throw new AppError(HttpStatus.CONFLICT, "Email Already Used");
 
     User newUser = new User(req.email(), req.username(), passwordEncoder.encode(req.password()));
-    Role defaultRole = roleService.findRoleByName("ROLE_USER");
+    Role defaultRole = roleService.findRoleByName("USER");
     newUser.getRoles().add(defaultRole);
 
     User savedUser = userRepo.save(newUser);
@@ -243,7 +243,7 @@ public class AuthService implements IAuthService {
                               () -> {
                                 User newUser = new User(email, name != null ? name : email, null);
                                 newUser.setProvider("GOOGLE");
-                                Role defaultRole = roleService.findRoleByName("ROLE_USER");
+                                Role defaultRole = roleService.findRoleByName("USER");
                                 newUser.getRoles().add(defaultRole);
                                 return newUser;
                               });

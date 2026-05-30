@@ -63,7 +63,7 @@ public class UserService implements IUserService {
         roles.add(role);
       }
     } else {
-      Role userRole = roleService.findRoleByName("ROLE_USER");
+      Role userRole = roleService.findRoleByName("USER");
       roles.add(userRole);
     }
     user.setRoles(roles);

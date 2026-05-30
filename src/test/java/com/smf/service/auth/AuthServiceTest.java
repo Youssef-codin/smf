@@ -382,7 +382,7 @@ class AuthServiceTest {
       u.setId(UUID.randomUUID());
       return u;
     });
-    when(roleService.findRoleByName("ROLE_USER")).thenReturn(new Role("ROLE_USER"));
+    when(roleService.findRoleByName("USER")).thenReturn(new Role("USER"));
     when(jwtUtils.generateTokenFromUserDetails(any(AppUserDetails.class))).thenReturn("jwt-token");
 
     JwtResponse response = svc.googleSignIn("fake-token");
