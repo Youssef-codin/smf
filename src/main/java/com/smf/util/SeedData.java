@@ -4,6 +4,7 @@ import com.smf.dto.auth.RegisterRequest;
 import com.smf.dto.worker.WorkerRequest;
 import com.smf.model.Announcement;
 import com.smf.model.Device;
+import com.smf.model.Event;
 import com.smf.model.RegisteredDevice;
 import com.smf.model.Role;
 import com.smf.model.SmfDevice;
@@ -11,8 +12,10 @@ import com.smf.model.User;
 import com.smf.model.Zone;
 import com.smf.model.enums.AnnouncementPriority;
 import com.smf.model.enums.AnnouncementStatus;
+import com.smf.model.enums.EventTypes;
 import com.smf.repo.AnnouncementRepository;
 import com.smf.repo.DeviceRepository;
+import com.smf.repo.EventRepository;
 import com.smf.repo.RegisteredDeviceRepository;
 import com.smf.repo.RoleRepository;
 import com.smf.repo.SmfDeviceRepository;
@@ -44,6 +47,7 @@ public class SeedData implements CommandLineRunner {
   private final SmfDeviceRepository smfDeviceRepository;
   private final RegisteredDeviceRepository registeredDeviceRepository;
   private final AnnouncementRepository announcementRepository;
+  private final EventRepository eventRepository;
   private final EncryptionUtil encryptionUtil;
   private final IWorkerService workerService;
   private final RestClient supabaseRestClient;
@@ -60,6 +64,7 @@ public class SeedData implements CommandLineRunner {
       SmfDeviceRepository smfDeviceRepository,
       RegisteredDeviceRepository registeredDeviceRepository,
       AnnouncementRepository announcementRepository,
+      EventRepository eventRepository,
       EncryptionUtil encryptionUtil,
       IWorkerService workerService,
       RestClient supabaseRestClient) {
@@ -71,6 +76,7 @@ public class SeedData implements CommandLineRunner {
     this.smfDeviceRepository = smfDeviceRepository;
     this.registeredDeviceRepository = registeredDeviceRepository;
     this.announcementRepository = announcementRepository;
+    this.eventRepository = eventRepository;
     this.encryptionUtil = encryptionUtil;
     this.workerService = workerService;
     this.supabaseRestClient = supabaseRestClient;
@@ -137,6 +143,9 @@ public class SeedData implements CommandLineRunner {
 
     // Seed workers to Supabase
     seedWorkers();
+
+    // Seed events
+    seedEvents();
   }
 
   private Role seedRole(String roleName, boolean isAdmin) {
@@ -329,6 +338,43 @@ public class SeedData implements CommandLineRunner {
         workerService.create(req, user.getId());
       }
     }
+  }
+
+  private void seedEvents() {
+    if (eventRepository.count() > 0) return;
+
+    seedEvent(EventTypes.DEVICE_ONLINE, "28:56:2F:4A:87:6C",
+        "{\"label\":\"smf device\"}", Instant.now().minusSeconds(7200));
+    seedEvent(EventTypes.ACCESS_GRANTED, "00:11:22:33:44:BB",
+        "{\"zone\":\"Zone A\",\"user\":\"engineer\"}", Instant.now().minusSeconds(5400));
+    seedEvent(EventTypes.ACCESS_DENIED, "00:11:22:33:44:DD",
+        "{\"zone\":\"Zone A\",\"user\":\"worker\",\"reason\":\"role not allowed\"}",
+        Instant.now().minusSeconds(4800));
+    seedEvent(EventTypes.ACCESS_GRANTED, "00:11:22:33:44:CC",
+        "{\"zone\":\"Zone B\",\"user\":\"manager\"}", Instant.now().minusSeconds(3600));
+    seedEvent(EventTypes.SOS_TRIGGERED, "00:11:22:33:44:EE",
+        "{\"worker\":\"omar.rashidi\",\"location\":\"City Towers Project\"}",
+        Instant.now().minusSeconds(2400));
+    seedEvent(EventTypes.DEVICE_OFFLINE, "00:11:22:33:44:FF",
+        "{\"worker\":\"fatima.alzahra\"}", Instant.now().minusSeconds(1800));
+    seedEvent(EventTypes.DEVICE_ONLINE, "00:11:22:33:44:FF",
+        "{\"worker\":\"fatima.alzahra\"}", Instant.now().minusSeconds(900));
+    seedEvent(EventTypes.ACCESS_GRANTED, "00:11:22:33:55:AA",
+        "{\"zone\":\"Zone C\",\"user\":\"mohammed.alsayed\"}",
+        Instant.now().minusSeconds(600));
+    seedEvent(EventTypes.SOS_TRIGGERED, "00:11:22:33:55:BB",
+        "{\"worker\":\"yousef.almansour\",\"location\":\"King Abdulaziz Port\"}",
+        Instant.now().minusSeconds(300));
+    seedEvent(EventTypes.DEVICE_OFFLINE, "00:11:22:33:44:AA",
+        "{\"label\":\"Admin Device\"}", Instant.now().minusSeconds(120));
+
+    System.out.println("Events seeded.");
+  }
+
+  private void seedEvent(EventTypes type, String macAddress, String metadata, Instant createdAt) {
+    Event event = new Event(type, macAddress, metadata);
+    event.setCreatedAt(createdAt);
+    eventRepository.save(event);
   }
 
   private void seedSmfDevice(User owner, String macAddress, String label, String secret) {
