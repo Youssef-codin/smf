@@ -352,6 +352,8 @@ public class SeedData implements CommandLineRunner {
         Instant.now().minusSeconds(4800));
     seedEvent(EventTypes.ACCESS_GRANTED, "00:11:22:33:44:CC",
         "{\"zone\":\"Zone B\",\"user\":\"manager\"}", Instant.now().minusSeconds(3600));
+    seedEvent(EventTypes.DEVICE_ONLINE, "00:11:22:33:44:EE",
+        "{\"worker\":\"omar.rashidi\"}", Instant.now().minusSeconds(2410));
     seedEvent(EventTypes.SOS_TRIGGERED, "00:11:22:33:44:EE",
         "{\"worker\":\"omar.rashidi\",\"location\":\"City Towers Project\"}",
         Instant.now().minusSeconds(2400));
@@ -362,6 +364,8 @@ public class SeedData implements CommandLineRunner {
     seedEvent(EventTypes.ACCESS_GRANTED, "00:11:22:33:55:AA",
         "{\"zone\":\"Zone C\",\"user\":\"mohammed.alsayed\"}",
         Instant.now().minusSeconds(600));
+    seedEvent(EventTypes.DEVICE_ONLINE, "00:11:22:33:55:BB",
+        "{\"worker\":\"yousef.almansour\"}", Instant.now().minusSeconds(310));
     seedEvent(EventTypes.SOS_TRIGGERED, "00:11:22:33:55:BB",
         "{\"worker\":\"yousef.almansour\",\"location\":\"King Abdulaziz Port\"}",
         Instant.now().minusSeconds(300));
@@ -370,6 +374,8 @@ public class SeedData implements CommandLineRunner {
 
     seedEvent(EventTypes.ACCESS_GRANTED, "00:11:22:33:44:BB",
         "{\"zone\":\"Zone B\",\"user\":\"engineer\"}", Instant.now().minusSeconds(90));
+    seedEvent(EventTypes.DEVICE_ONLINE, "00:11:22:33:55:AA",
+        "{\"worker\":\"mohammed.alsayed\"}", Instant.now().minusSeconds(70));
     seedEvent(EventTypes.SOS_TRIGGERED, "00:11:22:33:55:AA",
         "{\"worker\":\"mohammed.alsayed\",\"zone\":\"Zone B\",\"location\":\"South Warehouse\"}",
         Instant.now().minusSeconds(60));
