@@ -368,6 +368,12 @@ public class SeedData implements CommandLineRunner {
     seedEvent(EventTypes.DEVICE_OFFLINE, "00:11:22:33:44:AA",
         "{\"label\":\"Admin Device\"}", Instant.now().minusSeconds(120));
 
+    seedEvent(EventTypes.ACCESS_GRANTED, "00:11:22:33:44:BB",
+        "{\"zone\":\"Zone B\",\"user\":\"engineer\"}", Instant.now().minusSeconds(90));
+    seedEvent(EventTypes.SOS_TRIGGERED, "00:11:22:33:55:AA",
+        "{\"worker\":\"mohammed.alsayed\",\"zone\":\"Zone B\",\"location\":\"South Warehouse\"}",
+        Instant.now().minusSeconds(60));
+
     System.out.println("Events seeded.");
   }
 
