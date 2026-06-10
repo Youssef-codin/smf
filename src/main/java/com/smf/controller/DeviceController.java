@@ -72,9 +72,7 @@ public class DeviceController {
 
     ZoneAccessResult result = zoneService.checkZoneAccess(macAddress, request);
 
-    if (result.granted() && result.zoneId() != null) {
-      deviceService.updateDeviceZone(macAddress, result.zoneId());
-    }
+    deviceService.updateDeviceZone(macAddress, result.zoneId());
 
     return ResponseEntity.ok(
         new ApiResponse(
