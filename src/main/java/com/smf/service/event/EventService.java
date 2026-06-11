@@ -32,37 +32,37 @@ public class EventService implements IEventService {
   }
 
   @Override
-  public void handleTest(String macAddress) {
-    eventRepo.save(new Event(EventTypes.TESTING, macAddress, "{}"));
+  public void handleTest(String macAddress, String metadata) {
+    eventRepo.save(new Event(EventTypes.TESTING, macAddress, metadata));
   }
 
   @Override
-  public void handleDenied(String macAddress) {
-    Event event = eventRepo.save(new Event(EventTypes.ACCESS_DENIED, macAddress, "{}"));
+  public void handleDenied(String macAddress, String metadata) {
+    Event event = eventRepo.save(new Event(EventTypes.ACCESS_DENIED, macAddress, metadata));
     notificationService.broadcastEvent(
         event.getEventType(), event.getMacAddress(), event.getMetadata(), event.getId());
   }
 
   @Override
-  public void handleOnline(String macAddress) {
-    eventRepo.save(new Event(EventTypes.DEVICE_ONLINE, macAddress, "{}"));
+  public void handleOnline(String macAddress, String metadata) {
+    eventRepo.save(new Event(EventTypes.DEVICE_ONLINE, macAddress, metadata));
   }
 
   @Override
-  public void handleGranted(String macAddress) {
-    eventRepo.save(new Event(EventTypes.ACCESS_GRANTED, macAddress, "{}"));
+  public void handleGranted(String macAddress, String metadata) {
+    eventRepo.save(new Event(EventTypes.ACCESS_GRANTED, macAddress, metadata));
   }
 
   @Override
-  public void handleSos(String macAddress) {
-    Event event = eventRepo.save(new Event(EventTypes.SOS_TRIGGERED, macAddress, "{}"));
+  public void handleSos(String macAddress, String metadata) {
+    Event event = eventRepo.save(new Event(EventTypes.SOS_TRIGGERED, macAddress, metadata));
     notificationService.broadcastEvent(
         event.getEventType(), event.getMacAddress(), event.getMetadata(), event.getId());
   }
 
   @Override
-  public void handleOffline(String macAddress) {
-    Event event = eventRepo.save(new Event(EventTypes.DEVICE_OFFLINE, macAddress, "{}"));
+  public void handleOffline(String macAddress, String metadata) {
+    Event event = eventRepo.save(new Event(EventTypes.DEVICE_OFFLINE, macAddress, metadata));
     notificationService.broadcastEvent(
         event.getEventType(), event.getMacAddress(), event.getMetadata(), event.getId());
   }

@@ -57,7 +57,7 @@ class EventServiceTest {
 
     @Test
     void handleTest_shouldSaveEvent() {
-        eventService.handleTest("mac");
+        eventService.handleTest("mac", "{}");
         verify(eventRepo).save(any(Event.class));
     }
 
@@ -65,7 +65,7 @@ class EventServiceTest {
     void handleDenied_shouldSaveEventAndBroadcast() {
         when(eventRepo.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        eventService.handleDenied("mac");
+        eventService.handleDenied("mac", "{}");
 
         verify(eventRepo).save(any(Event.class));
         verify(notificationService).broadcastEvent(eq(EventTypes.ACCESS_DENIED), anyString(), anyString(), any());
@@ -73,13 +73,13 @@ class EventServiceTest {
 
     @Test
     void handleOnline_shouldSaveEvent() {
-        eventService.handleOnline("mac");
+        eventService.handleOnline("mac", "{}");
         verify(eventRepo).save(any(Event.class));
     }
 
     @Test
     void handleGranted_shouldSaveEvent() {
-        eventService.handleGranted("mac");
+        eventService.handleGranted("mac", "{}");
         verify(eventRepo).save(any(Event.class));
     }
 
@@ -87,7 +87,7 @@ class EventServiceTest {
     void handleOffline_shouldSaveEventAndBroadcast() {
         when(eventRepo.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        eventService.handleOffline("mac");
+        eventService.handleOffline("mac", "{}");
 
         verify(eventRepo).save(any(Event.class));
         verify(notificationService).broadcastEvent(eq(EventTypes.DEVICE_OFFLINE), anyString(), anyString(), any());
@@ -97,7 +97,7 @@ class EventServiceTest {
     void handleSos_shouldSaveEventAndBroadcast() {
         when(eventRepo.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        eventService.handleSos("mac");
+        eventService.handleSos("mac", "{}");
 
         verify(eventRepo).save(any(Event.class));
         verify(notificationService).broadcastEvent(eq(EventTypes.SOS_TRIGGERED), anyString(), anyString(), any());

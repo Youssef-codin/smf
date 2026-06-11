@@ -9,17 +9,17 @@ public interface IEventService {
 
   List<Event> getAllEvents();
 
-  void handleTest(String macAddress);
+  void handleTest(String macAddress, String metadata);
 
-  void handleDenied(String macAddress);
+  void handleDenied(String macAddress, String metadata);
 
-  void handleOnline(String macAddress);
+  void handleOnline(String macAddress, String metadata);
 
-  void handleGranted(String macAddress);
+  void handleGranted(String macAddress, String metadata);
 
-  void handleSos(String macAddress);
+  void handleSos(String macAddress, String metadata);
 
-  void handleOffline(String macAddress);
+  void handleOffline(String macAddress, String metadata);
 
   void logZoneAccessEvent(ZoneAccessResult result, String macAddress);
 }

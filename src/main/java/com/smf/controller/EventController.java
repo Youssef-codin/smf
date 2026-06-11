@@ -1,5 +1,7 @@
 package com.smf.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smf.dto.api.ApiResponse;
 import com.smf.dto.device.DeviceEventRequest;
 import com.smf.model.Event;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("${api.prefix}/events")
 public class EventController {
   private final IEventService service;
+  private final ObjectMapper objectMapper;
 
   @GetMapping("/client")
   @PreAuthorize("hasAnyAuthority('ADMIN', 'USER')")
@@ -34,14 +37,17 @@ public class EventController {
   }
 
   @PostMapping("/device")
-  public ResponseEntity<ApiResponse> event(@RequestBody @Validated DeviceEventRequest request) {
+  public ResponseEntity<ApiResponse> event(@RequestBody @Validated DeviceEventRequest request)
+      throws JsonProcessingException {
+    String metadata =
+        request.metadata() != null ? objectMapper.writeValueAsString(request.metadata()) : "{}";
     switch (request.event()) {
-      case DEVICE_OFFLINE -> service.handleOffline(request.macAddress());
-      case DEVICE_ONLINE -> service.handleOnline(request.macAddress());
-      case SOS_TRIGGERED -> service.handleSos(request.macAddress());
-      case ACCESS_DENIED -> service.handleDenied(request.macAddress());
-      case ACCESS_GRANTED -> service.handleGranted(request.macAddress());
-      case TESTING -> service.handleTest(request.macAddress());
+      case DEVICE_OFFLINE -> service.handleOffline(request.macAddress(), metadata);
+      case DEVICE_ONLINE -> service.handleOnline(request.macAddress(), metadata);
+      case SOS_TRIGGERED -> service.handleSos(request.macAddress(), metadata);
+      case ACCESS_DENIED -> service.handleDenied(request.macAddress(), metadata);
+      case ACCESS_GRANTED -> service.handleGranted(request.macAddress(), metadata);
+      case TESTING -> service.handleTest(request.macAddress(), metadata);
     }
     return ResponseEntity.ok(new ApiResponse(true, "Event completed", null));
   }
