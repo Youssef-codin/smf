@@ -23,7 +23,10 @@ import com.smf.repo.UserRepository;
 import com.smf.repo.ZoneRepository;
 import com.smf.service.auth.IAuthService;
 import com.smf.service.worker.IWorkerService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.sql.Timestamp;
+import java.util.UUID;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -38,6 +41,9 @@ import org.springframework.web.client.RestClient;
 @Component
 @Slf4j
 public class SeedData implements CommandLineRunner {
+
+  @PersistenceContext
+  private EntityManager entityManager;
 
   private final IAuthService authService;
   private final RoleRepository roleRepository;
@@ -106,10 +112,10 @@ public class SeedData implements CommandLineRunner {
     User workerUser =
         seedTestUser("worker", "worker@test.com", "password", new HashSet<>(Set.of(workerRole)));
 
-    // Seed zones with role restrictions
-    Zone zoneA = seedZone("Zone A", new HashSet<>(Set.of(engineerRole)));
-    Zone zoneB = seedZone("Zone B", new HashSet<>(Set.of(engineerRole, managerRole)));
-    Zone zoneC = seedZone("Zone C", new HashSet<>());
+    // Seed zones with role restrictions — A/B/C use fixed UUIDs so they never change
+    Zone zoneA = seedZone(UUID.fromString("00000000-0000-0000-0000-000000000001"), "Zone A", new HashSet<>(Set.of(engineerRole)));
+    Zone zoneB = seedZone(UUID.fromString("00000000-0000-0000-0000-000000000002"), "Zone B", new HashSet<>(Set.of(engineerRole, managerRole)));
+    Zone zoneC = seedZone(UUID.fromString("00000000-0000-0000-0000-000000000003"), "Zone C", new HashSet<>());
 
     Role[][] roleCombos = {
       {engineerRole},
@@ -183,6 +189,26 @@ public class SeedData implements CommandLineRunner {
       return userRepository.save(user);
     }
     return userRepository.findByEmail(email).orElse(null);
+  }
+
+  private Zone seedZone(UUID fixedId, String name, Set<Role> allowedRoles) {
+    return zoneRepository
+        .findByName(name)
+        .orElseGet(
+            () -> {
+              // Insert the row with a fixed id via native SQL. Going through JPA fails
+              // both ways: save() merges a pre-set id (treated as detached) and persist()
+              // rejects a non-null id under @GeneratedValue. A native insert sidesteps both.
+              entityManager
+                  .createNativeQuery("INSERT INTO zones (id, name) VALUES (:id, :name)")
+                  .setParameter("id", fixedId)
+                  .setParameter("name", name)
+                  .executeUpdate();
+              // Reload as a managed entity; setting roles is flushed at commit.
+              Zone zone = zoneRepository.findByName(name).orElseThrow();
+              zone.setAllowedRoles(allowedRoles);
+              return zone;
+            });
   }
 
   private Zone seedZone(String name, Set<Role> allowedRoles) {
