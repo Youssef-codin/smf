@@ -22,6 +22,7 @@ import com.smf.repo.SmfDeviceRepository;
 import com.smf.repo.UserRepository;
 import com.smf.repo.ZoneRepository;
 import com.smf.service.auth.IAuthService;
+import com.smf.service.notification.NotificationService;
 import com.smf.service.worker.IWorkerService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -57,6 +58,7 @@ public class SeedData implements CommandLineRunner {
   private final EncryptionUtil encryptionUtil;
   private final IWorkerService workerService;
   private final RestClient supabaseRestClient;
+  private final NotificationService notificationService;
 
   @Value("${app.is-dev-mode:false}")
   private boolean isDevMode;
@@ -73,7 +75,8 @@ public class SeedData implements CommandLineRunner {
       EventRepository eventRepository,
       EncryptionUtil encryptionUtil,
       IWorkerService workerService,
-      RestClient supabaseRestClient) {
+      RestClient supabaseRestClient,
+      NotificationService notificationService) {
     this.authService = authService;
     this.roleRepository = roleRepository;
     this.userRepository = userRepository;
@@ -86,6 +89,7 @@ public class SeedData implements CommandLineRunner {
     this.encryptionUtil = encryptionUtil;
     this.workerService = workerService;
     this.supabaseRestClient = supabaseRestClient;
+    this.notificationService = notificationService;
   }
 
   @Override
@@ -152,6 +156,37 @@ public class SeedData implements CommandLineRunner {
 
     // Seed events
     seedEvents();
+
+    // Fire a test notification 10 seconds after startup
+    scheduleStartupNotification();
+  }
+
+  private void scheduleStartupNotification() {
+    Thread t =
+        new Thread(
+            () -> {
+              try {
+                Thread.sleep(10_000);
+                Event event =
+                    eventRepository.save(
+                        new Event(
+                            EventTypes.SOS_TRIGGERED,
+                            "00:11:22:33:44:EE",
+                            "{\"worker\":\"omar.rashidi\",\"location\":\"City Towers Project\","
+                                + "\"test\":true}"));
+                notificationService.broadcastEvent(
+                    event.getEventType(),
+                    event.getMacAddress(),
+                    event.getMetadata(),
+                    event.getId());
+                System.out.println("Startup test notification broadcast to /topic/alerts");
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            },
+            "startup-notification");
+    t.setDaemon(true);
+    t.start();
   }
 
   private Role seedRole(String roleName, boolean isAdmin) {
